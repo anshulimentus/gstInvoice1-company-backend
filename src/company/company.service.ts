@@ -13,15 +13,35 @@ export class CompanyService {
     private web3: Web3;
     private contract: any;
     private account: string;
-    private contractAddress = "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC";
-    private privateKey = process.env.PRIVATE_KEY || "85007bbab10feafda61c2771f47c51e2062f99ecc4489b9205dc47c92518e5e8";
-    private providerURL = process.env.PROVIDER_URL || 'https://sepolia.infura.io/v3/eadd0f87d61c43a5a67587f4c83156a1';
-    private ownerAddress = process.env.OWNER_ADDRESS || "0x8dDf7814F14035aa34e867E6BB040CfDA1D3B4Ac";
+    private contractAddress: string;
+    private privateKey: string;
+    private providerURL: string;
+    private ownerAddress: string;
 
     constructor(
         @InjectRepository(Company)
         private readonly companyRepository: Repository<Company>,
     ) {
+        // Validate environment variables
+        if (!process.env.PROVIDER_URL) {
+            throw new Error('PROVIDER_URL is not set in environment variables');
+        }
+        if (!process.env.COMPANY_CONTRACT_ADDRESS) {
+            throw new Error('CONTRACT_ADDRESS is not set in environment variables');
+        }
+        if (!process.env.PRIVATE_KEY) {
+            throw new Error('PRIVATE_KEY is not set in environment variables');
+        }
+        if (!process.env.OWNER_ADDRESS) {
+            throw new Error('OWNER_ADDRESS is not set in environment variables');
+        }
+
+        this.providerURL = process.env.PROVIDER_URL;
+        this.contractAddress = process.env.COMPANY_CONTRACT_ADDRESS;
+        this.privateKey = process.env.PRIVATE_KEY;
+        this.ownerAddress = process.env.OWNER_ADDRESS;
+
+
         this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerURL));
         this.contract = new this.web3.eth.Contract([
             {
