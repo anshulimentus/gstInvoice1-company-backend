@@ -24,11 +24,11 @@ export class Invoice {
   supplyType: string;
 
   @ManyToOne(() => Company, (company) => company.invoices, { eager: true })
-  @JoinColumn({ name: 'sellerid' })
+  @JoinColumn({ name: 'sellerId' })
   seller: Company;
 
   @ManyToOne(() => Customer, (customer) => customer.invoices, { eager: true })
-  @JoinColumn({ name: 'buyerid' })
+  @JoinColumn({ name: 'buyerId' })
   buyer: Customer;
 
   @Column('decimal', { name: 'totalamount', precision: 10, scale: 2 })
@@ -61,4 +61,7 @@ export class Invoice {
 
   @CreateDateColumn({ name: 'createdat' })
   createdAt: Date;
+
+  @Column({ type: 'uuid' }) // Store the tenantId from Company
+    company_tenant_id: string;
 }
