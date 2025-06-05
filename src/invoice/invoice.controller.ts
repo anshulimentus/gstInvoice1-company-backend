@@ -89,8 +89,8 @@ import {
 
 
     @Get('seller/:tenantId')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.User)
+    // @UseGuards(JwtAuthGuard, RolesGuard)
+    // @Roles(Role.User)
     @ApiOperation({ summary: 'Get all invoices for a seller by tenantId' })
     @ApiParam({ name: 'tenantId', description: 'Tenant ID of the seller (UUID)' })
     @ApiResponse({ status: 200, description: 'List of invoices for the seller' })
