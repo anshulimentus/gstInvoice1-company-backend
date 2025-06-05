@@ -16,7 +16,7 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async create(@Body() createProductDto: CreateProductDto) {
-        console.log(chalk.bgCyanBright("🚀 Create Product router hit...."));
+        // console.log(chalk.bgCyanBright("🚀 Create Product router hit...."));
         return this.productService.create(createProductDto)
     }
 
@@ -24,7 +24,7 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async demo() {
-        console.log(chalk.bgCyanBright('Product contoller hit: basic'));
+        // console.log(chalk.bgCyanBright('Product contoller hit: basic'));
         return { status: 'active' };
     }
 
@@ -32,7 +32,7 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async totalProducts() {
-        console.log(chalk.bgCyanBright("🚀 Total Product router hit...."))
+        // console.log(chalk.bgCyanBright("🚀 Total Product router hit...."))
         const count = await this.productService.totalProducts();
         return { totalProducts: count };
     }
@@ -41,7 +41,7 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async findAll() {
-        console.log(chalk.bgCyanBright("🚀 Get all Product router hit...."))
+        // console.log(chalk.bgCyanBright("🚀 Get all Product router hit...."))
         return this.productService.findAll();
     }
 
@@ -49,7 +49,7 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async findAllByTenant(@Param('tenantId') tenantId: string) {
-        console.log(chalk.bgCyanBright("🚀 Get Product by tenantId router hit...."));
+        // console.log(chalk.bgCyanBright("🚀 Get Product by tenantId router hit...."));
         return this.productService.findAllByTenantId(tenantId);
     }
 
@@ -71,13 +71,13 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async findOne(@Param('id', ParseIntPipe) id: number) {
-        console.log(chalk.bgCyanBright("🚀 Get specific id product router hit...."))
+        // console.log(chalk.bgCyanBright("🚀 Get specific id product router hit...."))
         return this.productService.findOne(Number(id));
     }
 
     @Patch(':id')
     async update(@Param('id', ParseIntPipe) id: number, @Body() updateProductDto: UpdateProductDto) {
-        console.log(chalk.bgCyanBright("🚀 Update Product router hit...."))
+        // console.log(chalk.bgCyanBright("🚀 Update Product router hit...."))
         return this.productService.update(id, updateProductDto);
     }
 
@@ -85,7 +85,7 @@ export class ProductController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async remove(@Param('id', ParseIntPipe) id: number) {
-        console.log(chalk.bgCyanBright("🚀 Delete Product router hit...."))
+        // console.log(chalk.bgCyanBright("🚀 Delete Product router hit...."))
         return this.productService.remove(id);
     }
 

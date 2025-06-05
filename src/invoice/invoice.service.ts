@@ -520,9 +520,9 @@ export class InvoiceService {
             this.account = account.address;
             this.web3.eth.accounts.wallet.add(account);
             this.web3.eth.defaultAccount = account.address;
-            console.log(chalk.green("✅ Web3 account initialized:", this.account));
+            // console.log(chalk.green("✅ Web3 account initialized:", this.account));
         } catch (err) {
-            console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
+            // console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
             throw new InternalServerErrorException("Failed to initialize Web3 account");
         }
     }
@@ -724,7 +724,7 @@ export class InvoiceService {
             const savedInvoice = await this.invoiceRepository.save(invoice);
             return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
-            console.error('Failed to create invoice', error);
+            // console.error('Failed to create invoice', error);
             throw error;
         }
     }
@@ -791,7 +791,7 @@ export class InvoiceService {
 
             return this.findOne(id);
         } catch (error) {
-            console.error('Failed to update invoice', error);
+            // console.error('Failed to update invoice', error);
             throw error;
         }
     }
@@ -875,10 +875,10 @@ export class InvoiceService {
                 gasPrice: gasPrice
             });
 
-            console.log(`Invoice updated on blockchain: ${tx.transactionHash}`);
+            // console.log(`Invoice updated on blockchain: ${tx.transactionHash}`);
             return tx.transactionHash;
         } catch (error) {
-            console.error('Failed to update invoice on blockchain', error);
+            // console.error('Failed to update invoice on blockchain', error);
             throw new InternalServerErrorException('Failed to update invoice on blockchain');
         }
     }
@@ -896,10 +896,10 @@ export class InvoiceService {
                 gasPrice: gasPrice
             });
 
-            console.log(`Invoice deleted on blockchain: ${tx.transactionHash}`);
+            // console.log(`Invoice deleted on blockchain: ${tx.transactionHash}`);
             return tx.transactionHash;
         } catch (error) {
-            console.error('Failed to delete invoice on blockchain', error);
+            // console.error('Failed to delete invoice on blockchain', error);
             throw new InternalServerErrorException('Failed to delete invoice on blockchain');
         }
     }
@@ -917,7 +917,7 @@ export class InvoiceService {
                 grandTotal: this.web3.utils.fromWei(result.grandTotal, "ether")
             };
         } catch (error) {
-            console.error('Failed to get invoice from blockchain', error);
+            // console.error('Failed to get invoice from blockchain', error);
             throw error;
         }
     }
@@ -927,7 +927,7 @@ export class InvoiceService {
             const total = await this.contract.methods.totalInvoices().call();
             return Number(total);
         } catch (error) {
-            console.error('Failed to get total invoices from blockchain', error);
+            // console.error('Failed to get total invoices from blockchain', error);
             throw error;
         }
     }
@@ -948,7 +948,7 @@ export class InvoiceService {
 
             return dbInvoice;
         } catch (error) {
-            console.error('Failed to sync with blockchain', error);
+            // console.error('Failed to sync with blockchain', error);
             throw error;
         }
     }

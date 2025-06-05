@@ -20,7 +20,7 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin)
     async create(@Body() createCompanyDto: CreateCompanyDto, @Req() req: Request) {
-      console.log(chalk.green("🚀 Create Company router hit...."));
+      // console.log(chalk.green("🚀 Create Company router hit...."));
       return this.companyService.create(createCompanyDto, createCompanyDto.image_url);
     }
   
@@ -28,7 +28,7 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin) */
     async demo() {
-      console.log(chalk.bgBlue("🚀 Demo router hit...."));
+      // console.log(chalk.bgBlue("🚀 Demo router hit...."));
       return { message: "Demo route is working" };
     }
   
@@ -36,7 +36,7 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin) */
     async getTotalCompanies() {
-      console.log(chalk.bgBlueBright("🚀 Total company router hit...."));
+      // console.log(chalk.bgBlueBright("🚀 Total company router hit...."));
       const count = await this.companyService.getTotalCompanies();
       return { totalCompanies: count };
     }
@@ -45,14 +45,14 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin) */
     async findAll() {
-      console.log(chalk.bgGreenBright("🚀 Get all company router hit...."));
+      // console.log(chalk.bgGreenBright("🚀 Get all company router hit...."));
       return this.companyService.findAll();
     }
 
 
     @Get('tenant/:tenantId')
     async findByTenantId(@Param('tenantId') tenantId: string) {
-      console.log(chalk.yellow(`🚀 Fetching company with tenantId: ${tenantId}`));
+      // console.log(chalk.yellow(`🚀 Fetching company with tenantId: ${tenantId}`));
       return this.companyService.findByTenantId(tenantId);
     }
 
@@ -61,7 +61,7 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin, Role.User) */
     async findOne(@Param('id', ParseIntPipe) id: number) {
-      console.log(chalk.bgBlueBright("🚀 Fetching company with ID:", id));
+      // console.log(chalk.bgBlueBright("🚀 Fetching company with ID:", id));
       const company = await this.companyService.findOne(id);
       if (!company) {
         throw new NotFoundException(`Company with ID ${id} not found`);
@@ -73,7 +73,7 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin) */
     async update(@Param('id', ParseIntPipe) id: number, @Body() updateCompanyDto: UpdateCompanyDto) {
-      console.log(chalk.bgBlueBright("🚀 Update company router hit...."));
+      // console.log(chalk.bgBlueBright("🚀 Update company router hit...."));
       return this.companyService.update(id, updateCompanyDto);
     }
   
@@ -81,7 +81,7 @@ import {
     // @UseGuards(JwtAuthGuard, RolesGuard)
     // @Roles(Role.Admin) */
     async remove(@Param('id', ParseIntPipe) id: number) {
-      console.log(chalk.bgRedBright("🚀 Delete company router hit...."));
+      // console.log(chalk.bgRedBright("🚀 Delete company router hit...."));
       return this.companyService.remove(id);
     }
   }

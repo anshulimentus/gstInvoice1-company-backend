@@ -219,9 +219,9 @@ export class ProductService {
             this.account = account.address;
             this.web3.eth.accounts.wallet.add(account);
             this.web3.eth.defaultAccount = account.address;
-            console.log(chalk.green("✅ Web3 account initialized:", this.account));
+            // console.log(chalk.green("✅ Web3 account initialized:", this.account));
         } catch (err) {
-            console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
+            // console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
             throw new InternalServerErrorException("Failed to initialize Web3 account");
         }
 
@@ -230,7 +230,7 @@ export class ProductService {
 
 
     async create(createProductDto: CreateProductDto): Promise<Product> {
-        console.log("🚀 ~ ProductService ~ create ~ createProductDto:", createProductDto)
+        // console.log("🚀 ~ ProductService ~ create ~ createProductDto:", createProductDto)
         // Convert price to smallest unit (e.g., paise, cents)
         const onChainPrice = Math.round(createProductDto.unitPrice * 100);
 
@@ -300,7 +300,7 @@ export class ProductService {
         if (!product) {
             throw new Error(`Product with ID ${id} not found`);
         }
-        console.log("🚀 Exiting getting specific product method.....")
+        // console.log("🚀 Exiting getting specific product method.....")
         return product;
     }
 
@@ -321,7 +321,7 @@ export class ProductService {
             .updateProduct(updatedProduct.productID, updatedProduct.productName, updatedProduct.unitPrice)
             .send({ from: this.account });
 
-        console.log("🚀 Exiting updating method")
+        // console.log("🚀 Exiting updating method")
         return updatedProduct;
 
     }
@@ -332,12 +332,12 @@ export class ProductService {
             // Step 1: Delete from Blockchain
             const receipt = await this.contract.methods.deleteProduct(id).send({ from: this.account });
 
-            console.log('Transaction successful:', receipt.transactionHash);
+            // console.log('Transaction successful:', receipt.transactionHash);
 
             // Step 2: Delete from Database (after blockchain transaction success)  
             await this.productRepository.delete(id);
 
-            console.log(`Product with ID ${id} deleted from database`);
+            // console.log(`Product with ID ${id} deleted from database`);
         } catch (error) {
             console.error(`Error deleting product with ID ${id}:`, error);
             throw new Error('Failed to delete product');

@@ -379,9 +379,9 @@ export class CustomerService {
             this.account = account.address;
             this.web3.eth.accounts.wallet.add(account);
             this.web3.eth.defaultAccount = account.address;
-            console.log(chalk.green("✅ Web3 account for customer initialized:", this.account));
+            // console.log(chalk.green("✅ Web3 account for customer initialized:", this.account));
         } catch (err) {
-            console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
+            // console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
             throw new InternalServerErrorException("Failed to initialize Web3 account");
         };
     }
@@ -398,17 +398,17 @@ export class CustomerService {
 
         // Save to database (ID will be auto-generated)
         const newCustomer = this.customerRepository.create(createCustomerDto);
-        console.log("📌 Created Customer:", newCustomer);
+        // console.log("📌 Created Customer:", newCustomer);
 
         const savedCustomer = await this.customerRepository.save(newCustomer);
-        console.log("📌 Saved Customer:", savedCustomer);
+        // console.log("📌 Saved Customer:", savedCustomer);
 
         // Ensure all values exist before blockchain call
         if (!savedCustomer.id || !savedCustomer.name || !savedCustomer.gstNumber) {
             throw new BadRequestException("Missing required fields for blockchain transaction");
         }
 
-        console.log("🚀 Sending to blockchain:", savedCustomer.id, savedCustomer.name, savedCustomer.gstNumber);
+        // console.log("🚀 Sending to blockchain:", savedCustomer.id, savedCustomer.name, savedCustomer.gstNumber);
 
         // Send data to blockchain
         const tx = await this.contract.methods

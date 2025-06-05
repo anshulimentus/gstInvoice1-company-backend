@@ -41,7 +41,7 @@ async function bootstrap() {
 
 
   await app.listen(3001);
-  console.log("✅ NestJs server running on http://localhost:3001");
+  // console.log("✅ NestJs server running on http://localhost:3001");
 }
 bootstrap();
 

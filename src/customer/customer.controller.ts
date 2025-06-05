@@ -16,13 +16,13 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async create(@Body() createCustomerDto: CreateCustomerDto) {
-        console.log(chalk.bgGreenBright("🚀 Create Customer router hit...."));
+        // console.log(chalk.bgGreenBright("🚀 Create Customer router hit...."));
         return this.customerService.create(createCustomerDto);
     }
 
     @Get('demo')
     async demo() {
-        console.log(chalk.bgGreenBright("🚀 Customer controller hit: demo"));
+        // console.log(chalk.bgGreenBright("🚀 Customer controller hit: demo"));
         return { status: 'active' };
     }
 
@@ -30,7 +30,7 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async findAllByTenant(@Param('tenantId') tenantId: string) {
-        console.log(chalk.bgCyanBright("🚀 Get Product by tenantId router hit...."));
+        // console.log(chalk.bgCyanBright("🚀 Get Product by tenantId router hit...."));
         return this.customerService.findAllByTenantId(tenantId);
     }
 
@@ -38,7 +38,7 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async totalCustomers() {
-        console.log(chalk.bgGreenBright("🚀 Total Customer router hit...."));
+        // console.log(chalk.bgGreenBright("🚀 Total Customer router hit...."));
         const count = await this.customerService.totalCustomers();
         return { totalCustomers: count };
     }
@@ -47,7 +47,7 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async findAll() {
-        console.log(chalk.bgGreenBright("🚀 Get all customer router hit...."));
+        // console.log(chalk.bgGreenBright("🚀 Get all customer router hit...."));
         return this.customerService.findAll();
     }
 
@@ -55,7 +55,7 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async findOne(@Param('id') id: string) {
-        console.log(chalk.bgGreenBright("🚀 Fetching customer with ID:", id));
+        // console.log(chalk.bgGreenBright("🚀 Fetching customer with ID:", id));
         return this.customerService.findOne(id); // Pass `id` as string
     }
 
@@ -63,7 +63,7 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
-        console.log(chalk.bgGreenBright("🚀 Update customer router hit...."));
+        // console.log(chalk.bgGreenBright("🚀 Update customer router hit...."));
         return this.customerService.update(id, updateCustomerDto);
     }
 
@@ -71,7 +71,7 @@ export class CustomerController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
     async remove(@Param('id') id: string) {
-        console.log(chalk.bgGreenBright("🚀 Delete customer router hit...."));
+        // console.log(chalk.bgGreenBright("🚀 Delete customer router hit...."));
         return this.customerService.remove(id);
     }
 }

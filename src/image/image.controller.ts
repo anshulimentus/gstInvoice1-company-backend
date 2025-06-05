@@ -11,9 +11,9 @@ export class ImageController {
 
   @Post('upload')
   async uploadImage(@Body() uploadImageDto: UploadImageDto) {
-    console.log(chalk.green('Received upload request'));
+    // console.log(chalk.green('Received upload request'));
     const savedImage = await this.imageService.uploadImage(uploadImageDto);
-    console.log('Received DTO:', uploadImageDto); 
+    // console.log('Received DTO:', uploadImageDto); 
     
     return {
       message: 'Image uploaded successfully',

@@ -610,9 +610,9 @@ export class CompanyService {
             this.account = account.address;
             this.web3.eth.accounts.wallet.add(account);
             this.web3.eth.defaultAccount = account.address;
-            console.log(chalk.green("✅ Web3 account initialized:", this.account));
+            // console.log(chalk.green("✅ Web3 account initialized:", this.account));
         } catch (err) {
-            console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
+            // console.error(chalk.red("❌ Failed to initialize Web3 account:"), err);
             throw new InternalServerErrorException("Failed to initialize Web3 account");
         }
     }
@@ -642,7 +642,7 @@ export class CompanyService {
             throw new InternalServerErrorException("Failed to sign the transaction");
         }
 
-        console.log("📤 Sending signed transaction to the network...", signedTx.rawTransaction);
+        // console.log("📤 Sending signed transaction to the network...", signedTx.rawTransaction);
 
         // Send the signed transaction
         return this.web3.eth.sendSignedTransaction(signedTx.rawTransaction);
@@ -655,8 +655,8 @@ export class CompanyService {
             throw new BadRequestException("Company details are incomplete");
         }
 
-        console.log("📌 CompanyService: Starting company creation");
-        console.log("➡️ Payload:", createCompanyDto);
+        // console.log("📌 CompanyService: Starting company creation");
+        // console.log("➡️ Payload:", createCompanyDto);
 
         const address = `${addressline1}, ${addressline2 || ''}, ${district || ''}`.trim();
 
@@ -669,17 +669,17 @@ export class CompanyService {
             .addCompany(companyName, gstNumber, legalRepresentative)
             .encodeABI();
 
-        console.log("📤 Sending transaction to blockchain...");
+        // console.log("📤 Sending transaction to blockchain...");
 
         const receipt = await this.sendTransaction(encodedABI);
 
         if (!receipt || !receipt.status) {
-            console.error("❌ Blockchain transaction failed");
+            // console.error("❌ Blockchain transaction failed");
             throw new InternalServerErrorException("Transaction failed on-chain");
         }
 
-        console.log("✅ Transaction confirmed!");
-        console.log("🔗 Tx Hash:", receipt.transactionHash);
+        // console.log("✅ Transaction confirmed!");
+        // console.log("🔗 Tx Hash:", receipt.transactionHash);
 
         const newCompany = this.companyRepository.create({
             ...createCompanyDto,
@@ -690,7 +690,7 @@ export class CompanyService {
 
         const savedCompany = await this.companyRepository.save(newCompany);
 
-        console.log(chalk.bgGrey("✅ Company saved to database with ID:", savedCompany.id));
+        // console.log(chalk.bgGrey("✅ Company saved to database with ID:", savedCompany.id));
 
         return savedCompany;
     }
@@ -753,7 +753,7 @@ export class CompanyService {
         updatedCompany.transactionHash = tx.transactionHash;
         await this.companyRepository.save(updatedCompany);
 
-        console.log(chalk.bgGrey("✅ Company updated in database with ID:", updatedCompany.id));
+        // console.log(chalk.bgGrey("✅ Company updated in database with ID:", updatedCompany.id));
         return updatedCompany;
     }
 

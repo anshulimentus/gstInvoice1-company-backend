@@ -12,6 +12,6 @@ import { ImageEntity } from './image.entity';
 })
 export class ImageModule implements OnModuleInit {
   onModuleInit() {
-    console.log('📦 ImageModule has been initialized');
+    // console.log('📦 ImageModule has been initialized');
   }
 }
