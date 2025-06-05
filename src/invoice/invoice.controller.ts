@@ -26,6 +26,7 @@ import {
   import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
   import { Roles } from "src/auth/roles.decorator";
   import { Role } from "src/users/roles.enum";
+import { info } from 'console';
   
   
   @ApiTags('invoices')
@@ -95,7 +96,9 @@ import {
     @ApiParam({ name: 'tenantId', description: 'Tenant ID of the seller (UUID)' })
     @ApiResponse({ status: 200, description: 'List of invoices for the seller' })
     @ApiResponse({ status: 404, description: 'No invoices found for this tenant ID' })
+
     async findInvoicesByTenantId(@Param('tenantId') tenantId: string) {
+      info(`Fetching invoices for tenant ID: ${tenantId}`);
       return await this.invoiceService.findInvoicesByTenantId(tenantId);
     }
 

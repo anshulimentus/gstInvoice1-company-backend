@@ -8,6 +8,7 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import Web3 from 'web3';
 import * as PDFDocument from 'pdfkit';
 import * as chalk from 'chalk';
+import { info } from 'console';
 
 @Injectable()
 export class InvoiceService {
@@ -731,21 +732,23 @@ export class InvoiceService {
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         const invoices = await this.invoiceRepository.find({
-            where: {
-                seller: {
-                    tenantId: tenantId,
-                },
-            },
+            // where: {
+            //     seller: {
+            //         tenantId: tenantId,
+            //     },
+            // },
             relations: ['seller', 'buyer'], // ensures seller and buyer are fetched
             order: {
                 createdAt: 'DESC',
             },
         });
+        info(`Fetching invoices for tenant ID: ${tenantId}, \t found: ${invoices} invoices`);
 
         if (!invoices || invoices.length === 0) {
             throw new NotFoundException(`No invoices found for tenantId: ${tenantId}`);
         }
 
+        console.log("🚀 ~ InvoiceService ~ findInvoicesByTenantId ~ invoices:", invoices)
         return invoices;
     }
 
