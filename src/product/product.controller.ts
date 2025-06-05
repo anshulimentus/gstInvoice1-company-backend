@@ -82,8 +82,8 @@ export class ProductController {
     }
 
     @Delete(':id')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.User)
+    // @UseGuards(JwtAuthGuard, RolesGuard)
+    // @Roles(Role.User)
     async remove(@Param('id', ParseIntPipe) id: number) {
         // console.log(chalk.bgCyanBright("🚀 Delete Product router hit...."))
         return this.productService.remove(id);
