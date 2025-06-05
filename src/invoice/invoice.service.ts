@@ -732,11 +732,11 @@ export class InvoiceService {
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         const invoices = await this.invoiceRepository.find({
-            // where: {
-            //     seller: {
-            //         tenantId: tenantId,
-            //     },
-            // },
+            where: {
+                seller: {
+                    tenantId: tenantId,
+                },
+            },
             relations: ['seller', 'buyer'], // ensures seller and buyer are fetched
             order: {
                 createdAt: 'DESC',
