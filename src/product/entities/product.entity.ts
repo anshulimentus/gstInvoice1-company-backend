@@ -21,7 +21,7 @@ export class Product {
     @Column({ type: 'text' })  // Matching VARCHAR(255)
     image_url: string;
 
-    @Column({ length: 255 })  // Matching VARCHAR(255)
+    @Column({ length: 255, nullable: true })  // Matching VARCHAR(255)
     image_id: string;
 
     @Column("numeric", { precision: 10, scale: 2 })  // Ensuring numeric type consistency

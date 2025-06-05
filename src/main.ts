@@ -23,7 +23,7 @@ async function bootstrap() {
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
   app.enableCors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["https://gst-invoice-company-frontend.vercel.app/", "http://localhost:5174"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: ["Content-Type", 'Authorization', 'x-tenant-id'],
     credentials: true,
