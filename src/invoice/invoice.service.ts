@@ -852,10 +852,10 @@ export class InvoiceService {
                 gasPrice: gasPrice
             });
 
-            console.log(`Invoice created on blockchain: ${tx.transactionHash}`);
+            // console.log(`Invoice created on blockchain: ${tx.transactionHash}`);
             return tx.transactionHash;
         } catch (error) {
-            console.error('Failed to create invoice on blockchain', error);
+            // console.error('Failed to create invoice on blockchain', error);
             throw new InternalServerErrorException('Failed to create invoice on blockchain');
         }
     }
@@ -943,7 +943,7 @@ export class InvoiceService {
             // Compare and log differences
             const blockchainTotal = parseFloat(blockchainData.grandTotal);
             if (Math.abs(dbInvoice.grandTotal - blockchainTotal) > 0.001) {
-                console.warn(`Grand total mismatch for invoice ${invoiceNo}: DB=${dbInvoice.grandTotal}, Blockchain=${blockchainTotal}`);
+                // console.warn(`Grand total mismatch for invoice ${invoiceNo}: DB=${dbInvoice.grandTotal}, Blockchain=${blockchainTotal}`);
             }
 
             return dbInvoice;

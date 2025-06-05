@@ -9,7 +9,7 @@ export class RolesGuard implements CanActivate {
     constructor(private reflector: Reflector) {}
 
     canActivate(context: ExecutionContext): boolean {
-        console.log(chalk.bgBlueBright("🚀 JWT hit activated..."));
+        // console.log(chalk.bgBlueBright("🚀 JWT hit activated..."));
         const requiredRoles = this. reflector.getAllAndOverride<string[]>('Roles', [
             context.getHandler(),
             context.getClass(),

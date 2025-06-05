@@ -388,7 +388,7 @@ export class CustomerService {
 
 
     async create(createCustomerDto: CreateCustomerDto): Promise<Customer> {
-        console.log("📌 Received DTO:", createCustomerDto);
+        // console.log("📌 Received DTO:", createCustomerDto);
 
         // Check for duplicate phone before inserting
         const existingCustomer = await this.customerRepository.findOne({ where: { phone: createCustomerDto.phone } });

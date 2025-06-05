@@ -630,13 +630,13 @@ export class CompanyService {
             // type: 0, // Optional: only if you specifically want to use legacy type
         };
 
-        console.log("TX Object:", tx);
-        console.log("Private Key:", this.privateKey);
-        console.log("Account:", this.account);
+        // console.log("TX Object:", tx);
+        // console.log("Private Key:", this.privateKey);
+        // console.log("Account:", this.account);
 
         // Sign transaction using private key
         const signedTx = await this.web3.eth.accounts.signTransaction(tx, this.privateKey);
-        console.log("Signed Transaction:", signedTx);
+        // console.log("Signed Transaction:", signedTx);
 
         if (!signedTx.rawTransaction) {
             throw new InternalServerErrorException("Failed to sign the transaction");

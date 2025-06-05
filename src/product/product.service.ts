@@ -339,7 +339,7 @@ export class ProductService {
 
             // console.log(`Product with ID ${id} deleted from database`);
         } catch (error) {
-            console.error(`Error deleting product with ID ${id}:`, error);
+            // console.error(`Error deleting product with ID ${id}:`, error);
             throw new Error('Failed to delete product');
         }
     }
