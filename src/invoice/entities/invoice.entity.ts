@@ -24,11 +24,11 @@ export class Invoice {
   supplyType: string;
 
   @ManyToOne(() => Company, (company) => company.invoices, { eager: true })
-  @JoinColumn({ name: 'sellerId' })
+  @JoinColumn({ name: 'sellerid' })
   seller: Company;
 
   @ManyToOne(() => Customer, (customer) => customer.invoices, { eager: true })
-  @JoinColumn({ name: 'buyerId' })
+  @JoinColumn({ name: 'buyerid' })
   buyer: Customer;
 
   @Column('decimal', { name: 'totalamount', precision: 10, scale: 2 })
