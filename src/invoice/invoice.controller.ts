@@ -15,7 +15,7 @@ import {
     ParseUUIDPipe,
     Res,
     UseGuards,
-    
+    BadRequestException,
   } from '@nestjs/common';
   import { InvoiceService } from './invoice.service';
   import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -88,15 +88,18 @@ import { info } from 'console';
       res.end(pdfBuffer);
     }
 
-    // @UseGuards(JwtAuthGuard, RolesGuard)
-    // @Roles(Role.User)
-    @ApiOperation({ summary: 'Generate next invoice number' })
-    @ApiResponse({ status: 200, description: 'Next invoice number generated' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.User) // Or whatever role you want
     @Get('next-invoice-no')
     async getNextInvoiceNo() {
-      const invoiceNo = await this.invoiceService.generateInvoiceNumber();
-      return { invoiceNo };
+      try {
+        const invoiceNo = await this.invoiceService.generateInvoiceNumber();
+        return { invoiceNo };
+      } catch (error) {
+        throw new BadRequestException('Could not generate next invoice number');
+      }
     }
+    
 
 
 
