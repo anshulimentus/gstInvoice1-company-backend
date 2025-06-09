@@ -699,28 +699,62 @@ export class InvoiceService {
         }
     }
 
-    async generateInvoiceNumber(): Promise<string> {
+    async generateInvoiceNumber(user?: any): Promise<string> {
         try {
+          console.log('Generating invoice number for user:', user?.id);
+          
+          // Test database connection first
+          const connectionTest = await this.invoiceRepository.query('SELECT 1');
+          console.log('Database connection test:', connectionTest);
+          
+          // Add tenant filtering if needed
+          const whereClause = user?.company_tenant_id 
+            ? { company_tenant_id: user.company_tenant_id }
+            : {};
+          
           const latestInvoice = await this.invoiceRepository.findOne({
+            where: whereClause,
             order: { createdAt: 'DESC' },
             select: ['invoiceNo'],
           });
+          
+          console.log('Latest invoice found:', latestInvoice);
       
           let nextNumber = 1;
       
           if (latestInvoice?.invoiceNo) {
             const parts = latestInvoice.invoiceNo.split('-'); // ['INV', '121', '001']
-            const last = parseInt(parts[2]);
-            if (!isNaN(last)) {
-              nextNumber = last + 1;
+            console.log('Invoice number parts:', parts);
+            
+            if (parts.length >= 3) {
+              const last = parseInt(parts[2]);
+              if (!isNaN(last)) {
+                nextNumber = last + 1;
+              }
             }
           }
       
           const invoiceNo = `INV-121-${nextNumber.toString().padStart(3, '0')}`;
+          console.log('Generated invoice number:', invoiceNo);
+          
           return invoiceNo;
         } catch (error) {
-          console.error('Error generating invoice number:', error);
-          throw new BadRequestException('Failed to generate invoice number');
+          console.error('Service error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+          
+          // More specific error types
+          if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+            throw new Error('Database connection failed');
+          }
+          
+          if (error.message.includes('relation') || error.message.includes('table')) {
+            throw new Error('Database schema error - invoice table not found');
+          }
+          
+          throw new Error(`Database query failed: ${error.message}`);
         }
       }
       
