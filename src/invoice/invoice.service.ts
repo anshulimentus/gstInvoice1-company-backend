@@ -713,7 +713,7 @@ export class InvoiceService {
     
             // Then save to database
             const invoice = this.invoiceRepository.create({
-                invoiceNo: createInvoiceDto.invoiceNo,  // ✅ use generated invoice number here
+                invoiceNo: createInvoiceDto.invoiceNo,
                 invoiceDate: new Date(createInvoiceDto.invoiceDate),
                 supplyType: createInvoiceDto.supplyType,
                 seller: { id: createInvoiceDto.sellerId } as any,
