@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -700,23 +700,30 @@ export class InvoiceService {
     }
 
     async generateInvoiceNumber(): Promise<string> {
-        const latestInvoice = await this.invoiceRepository.findOne({
-            order: { invoiceId: 'DESC' },
+        try {
+          const latestInvoice = await this.invoiceRepository.findOne({
+            order: { createdAt: 'DESC' },
             select: ['invoiceNo'],
-        });
-    
-        let nextNumber = 1;
-    
-        if (latestInvoice?.invoiceNo) {
-            const parts = latestInvoice.invoiceNo.split('-'); // ['INV', '000', '001']
+          });
+      
+          let nextNumber = 1;
+      
+          if (latestInvoice?.invoiceNo) {
+            const parts = latestInvoice.invoiceNo.split('-'); // ['INV', '121', '001']
             const last = parseInt(parts[2]);
-            nextNumber = last + 1;
+            if (!isNaN(last)) {
+              nextNumber = last + 1;
+            }
+          }
+      
+          const invoiceNo = `INV-121-${nextNumber.toString().padStart(3, '0')}`;
+          return invoiceNo;
+        } catch (error) {
+          console.error('Error generating invoice number:', error);
+          throw new BadRequestException('Failed to generate invoice number');
         }
-    
-        const invoiceNo = `INV-121-${nextNumber.toString().padStart(3, '0')}`;
-        return invoiceNo;
-    }
-    
+      }
+      
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
             const invoiceNo = await this.generateInvoiceNumber();
