@@ -750,17 +750,17 @@ export class InvoiceService {
 
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
-            const invoiceNo = await this.generateInvoiceNumber();
+           
     
             // First create on blockchain
             const txHash = await this.createInvoiceOnChain(
-                invoiceNo,
+                createInvoiceDto.invoiceNo,
                 createInvoiceDto.grandTotal
             );
     
             // Then save to database
             const invoice = this.invoiceRepository.create({
-                invoiceNo,  // ✅ use generated invoice number here
+                invoiceNo: createInvoiceDto.invoiceNo,  // ✅ use generated invoice number here
                 invoiceDate: new Date(createInvoiceDto.invoiceDate),
                 supplyType: createInvoiceDto.supplyType,
                 seller: { id: createInvoiceDto.sellerId } as any,
