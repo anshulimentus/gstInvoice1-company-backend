@@ -88,6 +88,10 @@ import { info } from 'console';
       res.end(pdfBuffer);
     }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.User)
+    @ApiOperation({ summary: 'Generate next invoice number' })
+    @ApiResponse({ status: 200, description: 'Next invoice number generated' })
     @Get('next-invoice-no')
     async getNextInvoiceNo() {
       const invoiceNo = await this.invoiceService.generateInvoiceNumber();
