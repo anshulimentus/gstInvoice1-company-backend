@@ -703,10 +703,15 @@ export class InvoiceService {
         try {
           console.log('Generating invoice number for user:', user);
           
+          // Validate that we have tenant_id
+          if (!user?.tenant_id) {
+            throw new Error('Tenant ID is required but not provided');
+          }
+          
           // Use tenant_id from JWT token to filter invoices
-          const whereClause = user?.tenant_id 
-            ? { company_tenant_id: user.tenant_id }
-            : {};
+          const whereClause = { 
+            company_tenant_id: user.tenant_id 
+          };
           
           console.log('Where clause:', whereClause);
           
@@ -742,6 +747,7 @@ export class InvoiceService {
         }
       }
       
+
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
             const invoiceNo = await this.generateInvoiceNumber();
