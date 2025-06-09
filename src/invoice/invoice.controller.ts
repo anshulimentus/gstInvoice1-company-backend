@@ -88,10 +88,17 @@ import { info } from 'console';
       res.end(pdfBuffer);
     }
 
+    @Get('next-invoice-no')
+    async getNextInvoiceNo() {
+      const invoiceNo = await this.invoiceService.generateInvoiceNumber();
+      return { invoiceNo };
+    }
+
+
 
     @Get('seller/:tenantId')
-    // @UseGuards(JwtAuthGuard, RolesGuard)
-    // @Roles(Role.User)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.User)
     @ApiOperation({ summary: 'Get all invoices for a seller by tenantId' })
     @ApiParam({ name: 'tenantId', description: 'Tenant ID of the seller (UUID)' })
     @ApiResponse({ status: 200, description: 'List of invoices for the seller' })

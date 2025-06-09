@@ -698,17 +698,38 @@ export class InvoiceService {
             throw new InternalServerErrorException('Failed to generate PDF');
         }
     }
+
+    async generateInvoiceNumber(): Promise<string> {
+        const latestInvoice = await this.invoiceRepository.findOne({
+            order: { invoiceId: 'DESC' },
+            select: ['invoiceNo'],
+        });
+    
+        let nextNumber = 1;
+    
+        if (latestInvoice?.invoiceNo) {
+            const parts = latestInvoice.invoiceNo.split('-'); // ['INV', '000', '001']
+            const last = parseInt(parts[2]);
+            nextNumber = last + 1;
+        }
+    
+        const invoiceNo = `INV-121-${nextNumber.toString().padStart(3, '0')}`;
+        return invoiceNo;
+    }
+    
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
+            const invoiceNo = await this.generateInvoiceNumber();
+    
             // First create on blockchain
             const txHash = await this.createInvoiceOnChain(
-                createInvoiceDto.invoiceNo,
+                invoiceNo,
                 createInvoiceDto.grandTotal
             );
-
+    
             // Then save to database
             const invoice = this.invoiceRepository.create({
-                invoiceNo: createInvoiceDto.invoiceNo,
+                invoiceNo,  // ✅ use generated invoice number here
                 invoiceDate: new Date(createInvoiceDto.invoiceDate),
                 supplyType: createInvoiceDto.supplyType,
                 seller: { id: createInvoiceDto.sellerId } as any,
@@ -721,14 +742,14 @@ export class InvoiceService {
                 isFinal: createInvoiceDto.isFinal,
                 transactionHash: txHash,
             });
-
+    
             const savedInvoice = await this.invoiceRepository.save(invoice);
             return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
-            // console.error('Failed to create invoice', error);
             throw error;
         }
     }
+    
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         const invoices = await this.invoiceRepository.find({
