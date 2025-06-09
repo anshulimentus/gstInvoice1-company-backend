@@ -701,21 +701,19 @@ export class InvoiceService {
 
     async generateInvoiceNumber(user?: any): Promise<string> {
         try {
-          console.log('Generating invoice number for user:', user?.id);
+          console.log('Generating invoice number for user:', user);
           
-          // Test database connection first
-          const connectionTest = await this.invoiceRepository.query('SELECT 1');
-          console.log('Database connection test:', connectionTest);
-          
-          // Add tenant filtering if needed
-          const whereClause = user?.company_tenant_id 
-            ? { company_tenant_id: user.company_tenant_id }
+          // Use tenant_id from JWT token to filter invoices
+          const whereClause = user?.tenant_id 
+            ? { company_tenant_id: user.tenant_id }
             : {};
+          
+          console.log('Where clause:', whereClause);
           
           const latestInvoice = await this.invoiceRepository.findOne({
             where: whereClause,
             order: { createdAt: 'DESC' },
-            select: ['invoiceNo'],
+            select: ['invoiceNo'], // Make sure this matches your entity column name
           });
           
           console.log('Latest invoice found:', latestInvoice);
@@ -723,7 +721,7 @@ export class InvoiceService {
           let nextNumber = 1;
       
           if (latestInvoice?.invoiceNo) {
-            const parts = latestInvoice.invoiceNo.split('-'); // ['INV', '121', '001']
+            const parts = latestInvoice.invoiceNo.split('-');
             console.log('Invoice number parts:', parts);
             
             if (parts.length >= 3) {
@@ -739,21 +737,7 @@ export class InvoiceService {
           
           return invoiceNo;
         } catch (error) {
-          console.error('Service error details:', {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
-          });
-          
-          // More specific error types
-          if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-            throw new Error('Database connection failed');
-          }
-          
-          if (error.message.includes('relation') || error.message.includes('table')) {
-            throw new Error('Database schema error - invoice table not found');
-          }
-          
+          console.error('Service error details:', error);
           throw new Error(`Database query failed: ${error.message}`);
         }
       }
