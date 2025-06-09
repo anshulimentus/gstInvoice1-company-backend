@@ -699,54 +699,7 @@ export class InvoiceService {
         }
     }
 
-    async generateInvoiceNumber(user?: any): Promise<string> {
-        try {
-          console.log('Generating invoice number for user:', user);
-          
-          // Validate that we have tenant_id
-          if (!user?.tenant_id) {
-            throw new Error('Tenant ID is required but not provided');
-          }
-          
-          // Use tenant_id from JWT token to filter invoices
-          const whereClause = { 
-            company_tenant_id: user.tenant_id 
-          };
-          
-          console.log('Where clause:', whereClause);
-          
-          const latestInvoice = await this.invoiceRepository.findOne({
-            where: whereClause,
-            order: { createdAt: 'DESC' },
-            select: ['invoiceNo'], // Make sure this matches your entity column name
-          });
-          
-          console.log('Latest invoice found:', latestInvoice);
-      
-          let nextNumber = 1;
-      
-          if (latestInvoice?.invoiceNo) {
-            const parts = latestInvoice.invoiceNo.split('-');
-            console.log('Invoice number parts:', parts);
-            
-            if (parts.length >= 3) {
-              const last = parseInt(parts[2]);
-              if (!isNaN(last)) {
-                nextNumber = last + 1;
-              }
-            }
-          }
-      
-          const invoiceNo = `INV-121-${nextNumber.toString().padStart(3, '0')}`;
-          console.log('Generated invoice number:', invoiceNo);
-          
-          return invoiceNo;
-        } catch (error) {
-          console.error('Service error details:', error);
-          throw new Error(`Database query failed: ${error.message}`);
-        }
-      }
-      
+ 
 
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {

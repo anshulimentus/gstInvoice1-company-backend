@@ -56,59 +56,6 @@ export class InvoiceController {
     return await this.invoiceService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('next-invoice-no')
-  async getNextInvoiceNo(@Request() req) {
-    try {
-      console.log('User from JWT:', req.user);
-      
-      // Ensure we have the required user data
-      if (!req.user || !req.user.tenant_id) {
-        throw new BadRequestException('User tenant information is missing');
-      }
-      
-      // Pass the user's tenant_id for filtering
-      const invoiceNo = await this.invoiceService.generateInvoiceNumber(req.user);
-      return { invoiceNo };
-    } catch (error) {
-      console.error('Controller error:', error);
-      throw new BadRequestException(`Could not generate next invoice number: ${error.message}`);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-@Get('next-invoice-no/:tenantId')
-async getNextInvoiceNo1(
-  @Param('tenantId', ParseUUIDPipe) tenantId: string,
-  @Request() req
-) {
-  try {
-    console.log('Tenant ID from params:', tenantId);
-    console.log('User from JWT:', req.user);
-    
-    // Verify that the tenant_id matches the user's tenant (for security)
-    if (req.user.tenant_id !== tenantId) {
-      throw new ForbiddenException('Access denied to this tenant');
-    }
-    
-    // Create user object with tenant_id for service
-    const userWithTenant = {
-      ...req.user,
-      tenant_id: tenantId
-    };
-    
-    const invoiceNo = await this.invoiceService.generateInvoiceNumber(userWithTenant);
-    return { invoiceNo };
-  } catch (error) {
-    console.error('Controller error:', error);
-    
-    if (error instanceof ForbiddenException) {
-      throw error;
-    }
-    
-    throw new BadRequestException(`Could not generate next invoice number: ${error.message}`);
-  }
-}
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
