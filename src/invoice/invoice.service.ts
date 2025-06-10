@@ -1037,7 +1037,7 @@ export class InvoiceService {
       
           // 🔐 Make sure you have correct Web3 & contract instance
           const tx = await this.contract.methods
-            .createInvoiceStruct(
+            .createInvoice(
               invoiceNo,
               invoiceDate,
               supplyType,
