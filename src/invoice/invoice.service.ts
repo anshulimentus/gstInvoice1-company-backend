@@ -999,12 +999,12 @@ export class InvoiceService {
       
           // Format invoice items correctly
           const invoiceItems = items.map((item) => [
-            item.serialNo,
+            item.serialNo.toString(),
             item.name,
-            item.quantity,
-            item.unitPrice,
-            item.gstRate,
-            item.totalAmount
+            item.quantity.toString(),
+            item.unitPrice.toString(),
+            item.gstRate.toString(),
+            item.totalAmount.toString()
           ]);
       
           console.log('📋 Creating invoice with data:', {
