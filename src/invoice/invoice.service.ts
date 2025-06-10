@@ -274,41 +274,34 @@ export class InvoiceService {
                         "type": "string"
                     },
                     {
-                        "components": [
-                            {
-                                "internalType": "uint256",
-                                "name": "productID",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "productName",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "quantity",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "unitPrice",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "gstRate",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalAmount",
-                                "type": "uint256"
-                            }
-                        ],
-                        "internalType": "struct Company.InvoiceItem[]",
-                        "name": "_items",
-                        "type": "tuple[]"
+                        "internalType": "uint256[]",
+                        "name": "_productIDs",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "string[]",
+                        "name": "_productNames",
+                        "type": "string[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_quantities",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_unitPrices",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_gstRates",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_totalAmounts",
+                        "type": "uint256[]"
                     },
                     {
                         "internalType": "uint256",
@@ -701,41 +694,34 @@ export class InvoiceService {
                         "type": "string"
                     },
                     {
-                        "components": [
-                            {
-                                "internalType": "uint256",
-                                "name": "productID",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "productName",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "quantity",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "unitPrice",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "gstRate",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalAmount",
-                                "type": "uint256"
-                            }
-                        ],
-                        "internalType": "struct Company.InvoiceItem[]",
-                        "name": "_items",
-                        "type": "tuple[]"
+                        "internalType": "uint256[]",
+                        "name": "_productIDs",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "string[]",
+                        "name": "_productNames",
+                        "type": "string[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_quantities",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_unitPrices",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_gstRates",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "_totalAmounts",
+                        "type": "uint256[]"
                     },
                     {
                         "internalType": "uint256",
@@ -983,81 +969,118 @@ export class InvoiceService {
  
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
-            const { invoiceNo, invoiceDate, supplyType, items, totalTaxableValue, totalGstAmount, grandTotal, paymentTerms, isFinal } = createInvoiceDto;
-    
-            // 1. Verify invoice doesn't exist (modified check)
-            try {
-                const exists = await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
-                if (exists && exists.invoiceNumber) {
-                    throw new Error(`Invoice ${invoiceNo} already exists`);
-                }
-            } catch (error) {
-                if (!error.message.includes('Invoice not found')) {
-                    throw error;
-                }
+          const {
+            invoiceNo,
+            invoiceDate,
+            supplyType,
+            items,
+            totalTaxableValue,
+            totalGstAmount,
+            grandTotal,
+            paymentTerms,
+            isFinal,
+            sellerId,
+            buyerId,
+          } = createInvoiceDto;
+      
+          // 1. Check if invoice already exists on-chain
+          try {
+            const existing = await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
+            if (existing && existing.invoiceNumber) {
+              throw new Error(`Invoice ${invoiceNo} already exists`);
             }
-    
-            // 2. Format items correctly for Solidity struct array
-            const formattedItems = items.map(item => ({
-                productID: Number(item.serialNo),
-                productName: item.name,
-                quantity: Number(item.quantity),
-                unitPrice: Number(item.unitPrice),
-                gstRate: Number(item.gstRate),
-                totalAmount: Number(item.totalAmount)
-            }));
-    
-            // 3. Convert numeric values to strings (web3.js handles conversion)
-            const tx = await this.contract.methods
-                .createInvoice(
-                    invoiceNo,
-                    invoiceDate,
-                    supplyType,
-                    formattedItems,
-                    totalTaxableValue,
-                    totalGstAmount,
-                    grandTotal,
-                    paymentTerms,
-                    isFinal
-                )
-                .send({
-                    from: this.account,
-                    gas: 5000000,
-                    gasPrice: '3000000000'
-                });
-    
-            // Rest of your implementation...
-            const txHash = tx.transactionHash;
-            console.log('✅ Transaction successful:', txHash);
-    
-            const invoice = this.invoiceRepository.create({
-                invoiceNo,
-                invoiceDate: new Date(invoiceDate),
-                supplyType,
-                seller: { id: createInvoiceDto.sellerId } as any,
-                buyer: { id: createInvoiceDto.buyerId } as any,
-                items,
-                totalGstAmount,
-                totalTaxableValue,
-                grandTotal,
-                paymentTerms,
-                isFinal,
-                transactionHash: txHash,
+          } catch (error) {
+            if (!error.message.includes('Invoice not found')) {
+              throw error;
+            }
+          }
+      
+          // 2. Extract parallel arrays from items
+          const productIDs: number[] = [];
+          const productNames: string[] = [];
+          const quantities: number[] = [];
+          const unitPrices: number[] = [];
+          const gstRates: number[] = [];
+          const totalAmounts: number[] = [];
+      
+          for (const item of items) {
+            productIDs.push(Number(item.serialNo));
+            productNames.push(item.name);
+            quantities.push(Number(item.quantity));
+            unitPrices.push(Number(item.unitPrice));
+            gstRates.push(Number(item.gstRate));
+            totalAmounts.push(Number(item.totalAmount));
+          }
+      
+          // 3. Defensive check
+          if (
+            !items.length ||
+            productIDs.length !== productNames.length ||
+            productNames.length !== quantities.length ||
+            quantities.length !== unitPrices.length ||
+            unitPrices.length !== gstRates.length ||
+            gstRates.length !== totalAmounts.length
+          ) {
+            throw new Error("Invoice item arrays must be of the same non-zero length");
+          }
+      
+          // 4. Call smart contract method
+          const tx = await this.contract.methods
+            .createInvoice(
+              invoiceNo,
+              invoiceDate,
+              supplyType,
+              productIDs,
+              productNames,
+              quantities,
+              unitPrices,
+              gstRates,
+              totalAmounts,
+              totalTaxableValue,
+              totalGstAmount,
+              grandTotal,
+              paymentTerms,
+              isFinal
+            )
+            .send({
+              from: this.account,
+              gas: 5000000,
+              gasPrice: '3000000000',
             });
-    
-            const savedInvoice = await this.invoiceRepository.save(invoice);
-            return this.findOne(savedInvoice.invoiceId);
-    
+      
+          const txHash = tx.transactionHash;
+          console.log('✅ Transaction successful:', txHash);
+      
+          // 5. Store invoice in DB
+          const invoice = this.invoiceRepository.create({
+            invoiceNo,
+            invoiceDate: new Date(invoiceDate),
+            supplyType,
+            seller: { id: sellerId } as any,
+            buyer: { id: buyerId } as any,
+            items,
+            totalTaxableValue,
+            totalGstAmount,
+            grandTotal,
+            paymentTerms,
+            isFinal,
+            transactionHash: txHash,
+          });
+      
+          const savedInvoice = await this.invoiceRepository.save(invoice);
+          return this.findOne(savedInvoice.invoiceId);
+      
         } catch (error) {
-            console.error('❌ Detailed error:', {
-                message: error.message,
-                stack: error.stack,
-                data: error.data,
-                code: error.code
-            });
-            throw new Error(`Invoice creation failed: ${error.message}`);
+          console.error('❌ Detailed error:', {
+            message: error.message,
+            stack: error.stack,
+            data: error.data,
+            code: error.code
+          });
+          throw new Error(`Invoice creation failed: ${error.message}`);
         }
-    }
+      }
+      
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         const invoices = await this.invoiceRepository.find({
