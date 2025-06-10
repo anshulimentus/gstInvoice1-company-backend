@@ -1027,31 +1027,28 @@ export class InvoiceService {
             isFinal,
           } = createInvoiceDto;
       
-          // 🔁 Convert items into struct-compatible arrays
-          const productIDs = items.map((item) => item.serialNo);
-          const productNames = items.map((item) => item.name);
-          const quantities = items.map((item) => item.quantity);
-          const unitPrices = items.map((item) => item.unitPrice);
-          const gstRates = items.map((item) => item.gstRate);
-          const totalAmounts = items.map((item) => item.totalAmount);
+          // ✅ Convert items into InvoiceItem struct format
+          const invoiceItems = items.map((item) => ({
+            productID: item.serialNo,     // uint256
+            productName: item.name,       // string
+            quantity: item.quantity,      // uint256
+            unitPrice: item.unitPrice,    // uint256
+            gstRate: item.gstRate,        // uint256
+            totalAmount: item.totalAmount // uint256
+          }));
       
-          // 🔐 Make sure you have correct Web3 & contract instance
+          // 🔐 Call smart contract with correct parameter order
           const tx = await this.contract.methods
             .createInvoice(
-              invoiceNo,
-              invoiceDate,
-              supplyType,
-              productIDs,
-              productNames,
-              quantities,
-              unitPrices,
-              gstRates,
-              totalAmounts,
-              totalTaxableValue,
-              totalGstAmount,
-              grandTotal,
-              paymentTerms,
-              isFinal
+              invoiceNo,              // string
+              invoiceDate,            // string
+              supplyType,             // string
+              invoiceItems,           // InvoiceItem[] - correctly formatted structs
+              totalTaxableValue,      // uint256
+              totalGstAmount,         // uint256
+              grandTotal,             // uint256
+              paymentTerms,           // string
+              isFinal                 // bool
             )
             .send({ from: this.account });
       
@@ -1076,6 +1073,7 @@ export class InvoiceService {
           const savedInvoice = await this.invoiceRepository.save(invoice);
           return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
+          console.error('Invoice creation error:', error);
           throw new Error(`Invoice creation failed: ${error.message}`);
         }
       }
