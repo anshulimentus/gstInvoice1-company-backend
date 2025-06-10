@@ -981,90 +981,87 @@ export class InvoiceService {
     }
 
  
-
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
-          const { invoiceNo, invoiceDate, supplyType, items, totalTaxableValue, totalGstAmount, grandTotal, paymentTerms, isFinal } = createInvoiceDto;
-      
-          // ✅ CHECK: Verify invoice doesn't already exist
-          try {
-            await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
-            throw new Error(`Invoice ${invoiceNo} already exists on blockchain`);
-          } catch (contractError) {
-            // If it throws "Invoice not found", that's good - we can create it
-            if (!contractError.message.includes('Invoice not found')) {
-              throw contractError;
+            const { invoiceNo, invoiceDate, supplyType, items, totalTaxableValue, totalGstAmount, grandTotal, paymentTerms, isFinal } = createInvoiceDto;
+        
+            // ✅ CHECK: Verify invoice doesn't already exist
+            try {
+                await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
+                throw new Error(`Invoice ${invoiceNo} already exists on blockchain`);
+            } catch (contractError) {
+                if (!contractError.message.includes('Invoice not found')) {
+                    throw contractError;
+                }
             }
-          }
-      
-          // Format invoice items correctly
-          const invoiceItems = items.map((item) => [
-            item.serialNo.toString(),
-            item.name,
-            item.quantity.toString(),
-            item.unitPrice.toString(),
-            item.gstRate.toString(),
-            item.totalAmount.toString()
-          ]);
-      
-          console.log('📋 Creating invoice with data:', {
-            invoiceNo,
-            invoiceDate,
-            supplyType,
-            invoiceItems,
-            totalTaxableValue: totalTaxableValue.toString(),
-            totalGstAmount: totalGstAmount.toString(),
-            grandTotal: grandTotal.toString(),
-            paymentTerms,
-            isFinal
-          });
-      
-          // Call smart contract
-          const tx = await this.contract.methods
-            .createInvoice(
-              invoiceNo,
-              invoiceDate,
-              supplyType,
-              invoiceItems,
-              totalTaxableValue.toString(),
-              totalGstAmount.toString(),
-              grandTotal.toString(),
-              paymentTerms,
-              isFinal
-            )
-            .send({ 
-              from: this.account,
-              gas: 5000000,  // Increased gas limit
-              gasPrice: '3000000000' // Set gas price
+        
+            // Format invoice items correctly as array of objects
+            const invoiceItems = items.map((item) => ({
+                productID: this.web3.utils.toHex(item.serialNo),
+                productName: item.name,
+                quantity: this.web3.utils.toHex(item.quantity),
+                unitPrice: this.web3.utils.toHex(item.unitPrice),
+                gstRate: this.web3.utils.toHex(item.gstRate),
+                totalAmount: this.web3.utils.toHex(item.totalAmount)
+            }));
+        
+            console.log('📋 Creating invoice with data:', {
+                invoiceNo,
+                invoiceDate,
+                supplyType,
+                invoiceItems,
+                totalTaxableValue: totalTaxableValue.toString(),
+                totalGstAmount: totalGstAmount.toString(),
+                grandTotal: grandTotal.toString(),
+                paymentTerms,
+                isFinal
             });
-      
-          const txHash = tx.transactionHash;
-          console.log('✅ Smart contract transaction successful:', txHash);
-      
-          // Save to database
-          const invoice = this.invoiceRepository.create({
-            invoiceNo,
-            invoiceDate: new Date(invoiceDate),
-            supplyType,
-            seller: { id: createInvoiceDto.sellerId } as any,
-            buyer: { id: createInvoiceDto.buyerId } as any,
-            items,
-            totalGstAmount,
-            totalTaxableValue,
-            grandTotal,
-            paymentTerms,
-            isFinal,
-            transactionHash: txHash,
-          });
-      
-          const savedInvoice = await this.invoiceRepository.save(invoice);
-          return this.findOne(savedInvoice.invoiceId);
+        
+            // Call smart contract with proper data types
+            const tx = await this.contract.methods
+                .createInvoice(
+                    invoiceNo,
+                    invoiceDate,
+                    supplyType,
+                    invoiceItems,
+                    this.web3.utils.toHex(totalTaxableValue),
+                    this.web3.utils.toHex(totalGstAmount),
+                    this.web3.utils.toHex(grandTotal),
+                    paymentTerms,
+                    isFinal
+                )
+                .send({ 
+                    from: this.account,
+                    gas: 5000000,
+                    gasPrice: '3000000000'
+                });
+        
+            const txHash = tx.transactionHash;
+            console.log('✅ Smart contract transaction successful:', txHash);
+        
+            // Save to database
+            const invoice = this.invoiceRepository.create({
+                invoiceNo,
+                invoiceDate: new Date(invoiceDate),
+                supplyType,
+                seller: { id: createInvoiceDto.sellerId } as any,
+                buyer: { id: createInvoiceDto.buyerId } as any,
+                items,
+                totalGstAmount,
+                totalTaxableValue,
+                grandTotal,
+                paymentTerms,
+                isFinal,
+                transactionHash: txHash,
+            });
+        
+            const savedInvoice = await this.invoiceRepository.save(invoice);
+            return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
-          console.error('❌ Invoice creation error:', error);
-          throw new Error(`Invoice creation failed: ${error.message}`);
+            console.error('❌ Invoice creation error:', error);
+            throw new Error(`Invoice creation failed: ${error.message}`);
         }
-      }
-    
+    }
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         const invoices = await this.invoiceRepository.find({
