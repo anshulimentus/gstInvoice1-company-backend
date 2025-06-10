@@ -982,37 +982,6 @@ export class InvoiceService {
 
  
 
-    // async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
-    //     try {
-           
-    //         // First create on blockchain
-    //         const txHash = await this.createInvoiceOnChain(
-    //             createInvoiceDto.invoiceNo,
-    //             createInvoiceDto.grandTotal
-    //         );
-    
-    //         // Then save to database
-    //         const invoice = this.invoiceRepository.create({
-    //             invoiceNo: createInvoiceDto.invoiceNo,
-    //             invoiceDate: new Date(createInvoiceDto.invoiceDate),
-    //             supplyType: createInvoiceDto.supplyType,
-    //             seller: { id: createInvoiceDto.sellerId } as any,
-    //             buyer: { id: createInvoiceDto.buyerId } as any,
-    //             items: createInvoiceDto.items,
-    //             totalGstAmount: createInvoiceDto.totalGstAmount,
-    //             totalTaxableValue: createInvoiceDto.totalTaxableValue,
-    //             grandTotal: createInvoiceDto.grandTotal,
-    //             paymentTerms: createInvoiceDto.paymentTerms,
-    //             isFinal: createInvoiceDto.isFinal,
-    //             transactionHash: txHash,
-    //         });
-    
-    //         const savedInvoice = await this.invoiceRepository.save(invoice);
-    //         return this.findOne(savedInvoice.invoiceId);
-    //     } catch (error) {
-    //         throw error;
-    //     }
-    // }
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
           const {
@@ -1027,32 +996,38 @@ export class InvoiceService {
             isFinal,
           } = createInvoiceDto;
       
-          // ✅ Convert items into InvoiceItem struct format
-          const invoiceItems = items.map((item) => ({
-            productID: item.serialNo,     // uint256
-            productName: item.name,       // string
-            quantity: item.quantity,      // uint256
-            unitPrice: item.unitPrice,    // uint256
-            gstRate: item.gstRate,        // uint256
-            totalAmount: item.totalAmount // uint256
-          }));
+          // ✅ FIXED: Properly format InvoiceItem structs for Web3
+          const invoiceItems = items.map((item) => [
+            item.serialNo.toString(),     // productID as string (Web3 converts to uint256)
+            item.name,                    // productName as string
+            item.quantity.toString(),     // quantity as string (Web3 converts to uint256)
+            item.unitPrice.toString(),    // unitPrice as string (Web3 converts to uint256)
+            item.gstRate.toString(),      // gstRate as string (Web3 converts to uint256)
+            item.totalAmount.toString()   // totalAmount as string (Web3 converts to uint256)
+          ]);
       
-          // 🔐 Call smart contract with correct parameter order
+          console.log('📋 Formatted invoice items for Web3:', invoiceItems);
+      
+          // 🔐 Call smart contract with correct parameter formatting
           const tx = await this.contract.methods
             .createInvoice(
-              invoiceNo,              // string
-              invoiceDate,            // string
-              supplyType,             // string
-              invoiceItems,           // InvoiceItem[] - correctly formatted structs
-              totalTaxableValue,      // uint256
-              totalGstAmount,         // uint256
-              grandTotal,             // uint256
-              paymentTerms,           // string
-              isFinal                 // bool
+              invoiceNo,                        // string
+              invoiceDate,                      // string
+              supplyType,                       // string
+              invoiceItems,                     // InvoiceItem[] - as array of arrays
+              totalTaxableValue.toString(),     // uint256 as string
+              totalGstAmount.toString(),        // uint256 as string
+              grandTotal.toString(),            // uint256 as string
+              paymentTerms,                     // string
+              isFinal                           // bool
             )
-            .send({ from: this.account });
+            .send({ 
+              from: this.account,
+              gas: 3000000,  // Add gas limit to prevent out-of-gas errors
+            });
       
           const txHash = tx.transactionHash;
+          console.log('✅ Smart contract transaction successful:', txHash);
       
           // 💾 Save to database after successful blockchain tx
           const invoice = this.invoiceRepository.create({
@@ -1073,7 +1048,13 @@ export class InvoiceService {
           const savedInvoice = await this.invoiceRepository.save(invoice);
           return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
-          console.error('Invoice creation error:', error);
+          console.error('❌ Invoice creation error:', error);
+          
+          // More detailed error logging
+          if (error.message.includes('Web3 validator')) {
+            console.error('🔍 Web3 validation failed - check parameter types and formats');
+          }
+          
           throw new Error(`Invoice creation failed: ${error.message}`);
         }
       }
