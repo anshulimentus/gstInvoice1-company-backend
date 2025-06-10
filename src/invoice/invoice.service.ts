@@ -116,12 +116,6 @@ export class InvoiceService {
                         "internalType": "string",
                         "name": "invoiceNumber",
                         "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "grandTotal",
-                        "type": "uint256"
                     }
                 ],
                 "name": "InvoiceCreated",
@@ -148,12 +142,6 @@ export class InvoiceService {
                         "internalType": "string",
                         "name": "invoiceNumber",
                         "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "grandTotal",
-                        "type": "uint256"
                     }
                 ],
                 "name": "InvoiceUpdated",
@@ -276,9 +264,76 @@ export class InvoiceService {
                         "type": "string"
                     },
                     {
+                        "internalType": "string",
+                        "name": "_invoiceDate",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_supplyType",
+                        "type": "string"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "productID",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "productName",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "quantity",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "unitPrice",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "gstRate",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalAmount",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct Company.InvoiceItem[]",
+                        "name": "_items",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_totalTaxableValue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_totalGstAmount",
+                        "type": "uint256"
+                    },
+                    {
                         "internalType": "uint256",
                         "name": "_grandTotal",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_paymentTerms",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "_isFinal",
+                        "type": "bool"
                     }
                 ],
                 "name": "createInvoice",
@@ -355,24 +410,183 @@ export class InvoiceService {
                 "type": "function"
             },
             {
+                "inputs": [],
+                "name": "getAllInvoices",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "string",
+                                "name": "invoiceNumber",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "invoiceDate",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "supplyType",
+                                "type": "string"
+                            },
+                            {
+                                "components": [
+                                    {
+                                        "internalType": "uint256",
+                                        "name": "productID",
+                                        "type": "uint256"
+                                    },
+                                    {
+                                        "internalType": "string",
+                                        "name": "productName",
+                                        "type": "string"
+                                    },
+                                    {
+                                        "internalType": "uint256",
+                                        "name": "quantity",
+                                        "type": "uint256"
+                                    },
+                                    {
+                                        "internalType": "uint256",
+                                        "name": "unitPrice",
+                                        "type": "uint256"
+                                    },
+                                    {
+                                        "internalType": "uint256",
+                                        "name": "gstRate",
+                                        "type": "uint256"
+                                    },
+                                    {
+                                        "internalType": "uint256",
+                                        "name": "totalAmount",
+                                        "type": "uint256"
+                                    }
+                                ],
+                                "internalType": "struct Company.InvoiceItem[]",
+                                "name": "items",
+                                "type": "tuple[]"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalTaxableValue",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalGstAmount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "grandTotal",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "paymentTerms",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isFinal",
+                                "type": "bool"
+                            }
+                        ],
+                        "internalType": "struct Company.Invoice[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
                 "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    }
+                ],
+                "name": "getInvoiceByNumber",
+                "outputs": [
                     {
                         "internalType": "string",
                         "name": "",
                         "type": "string"
-                    }
-                ],
-                "name": "invoices",
-                "outputs": [
+                    },
                     {
                         "internalType": "string",
-                        "name": "invoiceNumber",
+                        "name": "",
                         "type": "string"
                     },
                     {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "productID",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "productName",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "quantity",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "unitPrice",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "gstRate",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalAmount",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct Company.InvoiceItem[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    },
+                    {
                         "internalType": "uint256",
-                        "name": "grandTotal",
+                        "name": "",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
                     }
                 ],
                 "stateMutability": "view",
@@ -477,9 +691,76 @@ export class InvoiceService {
                         "type": "string"
                     },
                     {
+                        "internalType": "string",
+                        "name": "_invoiceDate",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_supplyType",
+                        "type": "string"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "productID",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "productName",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "quantity",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "unitPrice",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "gstRate",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalAmount",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct Company.InvoiceItem[]",
+                        "name": "_items",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_totalTaxableValue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_totalGstAmount",
+                        "type": "uint256"
+                    },
+                    {
                         "internalType": "uint256",
                         "name": "_grandTotal",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_paymentTerms",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "_isFinal",
+                        "type": "bool"
                     }
                 ],
                 "name": "updateInvoice",
@@ -701,38 +982,104 @@ export class InvoiceService {
 
  
 
+    // async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
+    //     try {
+           
+    //         // First create on blockchain
+    //         const txHash = await this.createInvoiceOnChain(
+    //             createInvoiceDto.invoiceNo,
+    //             createInvoiceDto.grandTotal
+    //         );
+    
+    //         // Then save to database
+    //         const invoice = this.invoiceRepository.create({
+    //             invoiceNo: createInvoiceDto.invoiceNo,
+    //             invoiceDate: new Date(createInvoiceDto.invoiceDate),
+    //             supplyType: createInvoiceDto.supplyType,
+    //             seller: { id: createInvoiceDto.sellerId } as any,
+    //             buyer: { id: createInvoiceDto.buyerId } as any,
+    //             items: createInvoiceDto.items,
+    //             totalGstAmount: createInvoiceDto.totalGstAmount,
+    //             totalTaxableValue: createInvoiceDto.totalTaxableValue,
+    //             grandTotal: createInvoiceDto.grandTotal,
+    //             paymentTerms: createInvoiceDto.paymentTerms,
+    //             isFinal: createInvoiceDto.isFinal,
+    //             transactionHash: txHash,
+    //         });
+    
+    //         const savedInvoice = await this.invoiceRepository.save(invoice);
+    //         return this.findOne(savedInvoice.invoiceId);
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
-           
-    
-            // First create on blockchain
-            const txHash = await this.createInvoiceOnChain(
-                createInvoiceDto.invoiceNo,
-                createInvoiceDto.grandTotal
-            );
-    
-            // Then save to database
-            const invoice = this.invoiceRepository.create({
-                invoiceNo: createInvoiceDto.invoiceNo,
-                invoiceDate: new Date(createInvoiceDto.invoiceDate),
-                supplyType: createInvoiceDto.supplyType,
-                seller: { id: createInvoiceDto.sellerId } as any,
-                buyer: { id: createInvoiceDto.buyerId } as any,
-                items: createInvoiceDto.items,
-                totalGstAmount: createInvoiceDto.totalGstAmount,
-                totalTaxableValue: createInvoiceDto.totalTaxableValue,
-                grandTotal: createInvoiceDto.grandTotal,
-                paymentTerms: createInvoiceDto.paymentTerms,
-                isFinal: createInvoiceDto.isFinal,
-                transactionHash: txHash,
-            });
-    
-            const savedInvoice = await this.invoiceRepository.save(invoice);
-            return this.findOne(savedInvoice.invoiceId);
+          const {
+            invoiceNo,
+            invoiceDate,
+            supplyType,
+            items,
+            totalTaxableValue,
+            totalGstAmount,
+            grandTotal,
+            paymentTerms,
+            isFinal,
+          } = createInvoiceDto;
+      
+          // 🔁 Convert items into struct-compatible arrays
+          const productIDs = items.map((item) => item.serialNo);
+          const productNames = items.map((item) => item.name);
+          const quantities = items.map((item) => item.quantity);
+          const unitPrices = items.map((item) => item.unitPrice);
+          const gstRates = items.map((item) => item.gstRate);
+          const totalAmounts = items.map((item) => item.totalAmount);
+      
+          // 🔐 Make sure you have correct Web3 & contract instance
+          const tx = await this.contract.methods
+            .createInvoiceStruct(
+              invoiceNo,
+              invoiceDate,
+              supplyType,
+              productIDs,
+              productNames,
+              quantities,
+              unitPrices,
+              gstRates,
+              totalAmounts,
+              totalTaxableValue,
+              totalGstAmount,
+              grandTotal,
+              paymentTerms,
+              isFinal
+            )
+            .send({ from: this.account });
+      
+          const txHash = tx.transactionHash;
+      
+          // 💾 Save to database after successful blockchain tx
+          const invoice = this.invoiceRepository.create({
+            invoiceNo,
+            invoiceDate: new Date(invoiceDate),
+            supplyType,
+            seller: { id: createInvoiceDto.sellerId } as any,
+            buyer: { id: createInvoiceDto.buyerId } as any,
+            items,
+            totalGstAmount,
+            totalTaxableValue,
+            grandTotal,
+            paymentTerms,
+            isFinal,
+            transactionHash: txHash,
+          });
+      
+          const savedInvoice = await this.invoiceRepository.save(invoice);
+          return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
-            throw error;
+          throw new Error(`Invoice creation failed: ${error.message}`);
         }
-    }
+      }
+      
     
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
@@ -859,6 +1206,9 @@ export class InvoiceService {
                 gas: gasEstimate,
                 gasPrice: gasPrice
             });
+
+            const invoiceNum = await this.contract.methods.totalInvoices().call();
+            console.log(`Invoice created on blockchain with number: ${invoiceNum}`);
 
             // console.log(`Invoice created on blockchain: ${tx.transactionHash}`);
             return tx.transactionHash;
