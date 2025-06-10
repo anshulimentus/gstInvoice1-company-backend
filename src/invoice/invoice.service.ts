@@ -984,52 +984,64 @@ export class InvoiceService {
 
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
-          const {
+          const { invoiceNo, invoiceDate, supplyType, items, totalTaxableValue, totalGstAmount, grandTotal, paymentTerms, isFinal } = createInvoiceDto;
+      
+          // ✅ CHECK: Verify invoice doesn't already exist
+          try {
+            await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
+            throw new Error(`Invoice ${invoiceNo} already exists on blockchain`);
+          } catch (contractError) {
+            // If it throws "Invoice not found", that's good - we can create it
+            if (!contractError.message.includes('Invoice not found')) {
+              throw contractError;
+            }
+          }
+      
+          // Format invoice items correctly
+          const invoiceItems = items.map((item) => [
+            item.serialNo,
+            item.name,
+            item.quantity,
+            item.unitPrice,
+            item.gstRate,
+            item.totalAmount
+          ]);
+      
+          console.log('📋 Creating invoice with data:', {
             invoiceNo,
             invoiceDate,
             supplyType,
-            items,
-            totalTaxableValue,
-            totalGstAmount,
-            grandTotal,
+            invoiceItems,
+            totalTaxableValue: totalTaxableValue.toString(),
+            totalGstAmount: totalGstAmount.toString(),
+            grandTotal: grandTotal.toString(),
             paymentTerms,
-            isFinal,
-          } = createInvoiceDto;
+            isFinal
+          });
       
-          // ✅ FIXED: Properly format InvoiceItem structs for Web3
-          const invoiceItems = items.map((item) => [
-            item.serialNo.toString(),     // productID as string (Web3 converts to uint256)
-            item.name,                    // productName as string
-            item.quantity.toString(),     // quantity as string (Web3 converts to uint256)
-            item.unitPrice.toString(),    // unitPrice as string (Web3 converts to uint256)
-            item.gstRate.toString(),      // gstRate as string (Web3 converts to uint256)
-            item.totalAmount.toString()   // totalAmount as string (Web3 converts to uint256)
-          ]);
-      
-          console.log('📋 Formatted invoice items for Web3:', invoiceItems);
-      
-          // 🔐 Call smart contract with correct parameter formatting
+          // Call smart contract
           const tx = await this.contract.methods
             .createInvoice(
-              invoiceNo,                        // string
-              invoiceDate,                      // string
-              supplyType,                       // string
-              invoiceItems,                     // InvoiceItem[] - as array of arrays
-              totalTaxableValue.toString(),     // uint256 as string
-              totalGstAmount.toString(),        // uint256 as string
-              grandTotal.toString(),            // uint256 as string
-              paymentTerms,                     // string
-              isFinal                           // bool
+              invoiceNo,
+              invoiceDate,
+              supplyType,
+              invoiceItems,
+              totalTaxableValue.toString(),
+              totalGstAmount.toString(),
+              grandTotal.toString(),
+              paymentTerms,
+              isFinal
             )
             .send({ 
               from: this.account,
-              gas: 3000000,  // Add gas limit to prevent out-of-gas errors
+              gas: 5000000,  // Increased gas limit
+              gasPrice: '3000000000' // Set gas price
             });
       
           const txHash = tx.transactionHash;
           console.log('✅ Smart contract transaction successful:', txHash);
       
-          // 💾 Save to database after successful blockchain tx
+          // Save to database
           const invoice = this.invoiceRepository.create({
             invoiceNo,
             invoiceDate: new Date(invoiceDate),
@@ -1049,16 +1061,9 @@ export class InvoiceService {
           return this.findOne(savedInvoice.invoiceId);
         } catch (error) {
           console.error('❌ Invoice creation error:', error);
-          
-          // More detailed error logging
-          if (error.message.includes('Web3 validator')) {
-            console.error('🔍 Web3 validation failed - check parameter types and formats');
-          }
-          
           throw new Error(`Invoice creation failed: ${error.message}`);
         }
       }
-      
     
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
