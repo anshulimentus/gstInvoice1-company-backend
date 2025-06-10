@@ -1014,9 +1014,9 @@ export class InvoiceService {
                     invoiceDate,
                     supplyType,
                     formattedItems,
-                    totalTaxableValue.toString(),
-                    totalGstAmount.toString(),
-                    grandTotal.toString(),
+                    totalTaxableValue,
+                    totalGstAmount,
+                    grandTotal,
                     paymentTerms,
                     isFinal
                 )
