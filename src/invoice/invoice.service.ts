@@ -984,62 +984,52 @@ export class InvoiceService {
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
             const { invoiceNo, invoiceDate, supplyType, items, totalTaxableValue, totalGstAmount, grandTotal, paymentTerms, isFinal } = createInvoiceDto;
-        
-            // ✅ CHECK: Verify invoice doesn't already exist
+    
+            // 1. Verify invoice doesn't exist (modified check)
             try {
-                await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
-                throw new Error(`Invoice ${invoiceNo} already exists on blockchain`);
-            } catch (contractError) {
-                if (!contractError.message.includes('Invoice not found')) {
-                    throw contractError;
+                const exists = await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
+                if (exists && exists.invoiceNumber) {
+                    throw new Error(`Invoice ${invoiceNo} already exists`);
+                }
+            } catch (error) {
+                if (!error.message.includes('Invoice not found')) {
+                    throw error;
                 }
             }
-        
-            // Format invoice items correctly as array of objects
-            const invoiceItems = items.map((item) => ({
-                productID: this.web3.utils.toHex(item.serialNo),
+    
+            // 2. Format items correctly for Solidity struct array
+            const formattedItems = items.map(item => ({
+                productID: Number(item.serialNo),
                 productName: item.name,
-                quantity: this.web3.utils.toHex(item.quantity),
-                unitPrice: this.web3.utils.toHex(item.unitPrice),
-                gstRate: this.web3.utils.toHex(item.gstRate),
-                totalAmount: this.web3.utils.toHex(item.totalAmount)
+                quantity: Number(item.quantity),
+                unitPrice: Number(item.unitPrice),
+                gstRate: Number(item.gstRate),
+                totalAmount: Number(item.totalAmount)
             }));
-        
-            console.log('📋 Creating invoice with data:', {
-                invoiceNo,
-                invoiceDate,
-                supplyType,
-                invoiceItems,
-                totalTaxableValue: totalTaxableValue.toString(),
-                totalGstAmount: totalGstAmount.toString(),
-                grandTotal: grandTotal.toString(),
-                paymentTerms,
-                isFinal
-            });
-        
-            // Call smart contract with proper data types
+    
+            // 3. Convert numeric values to strings (web3.js handles conversion)
             const tx = await this.contract.methods
                 .createInvoice(
                     invoiceNo,
                     invoiceDate,
                     supplyType,
-                    invoiceItems,
-                    this.web3.utils.toHex(totalTaxableValue),
-                    this.web3.utils.toHex(totalGstAmount),
-                    this.web3.utils.toHex(grandTotal),
+                    formattedItems,
+                    totalTaxableValue.toString(),
+                    totalGstAmount.toString(),
+                    grandTotal.toString(),
                     paymentTerms,
                     isFinal
                 )
-                .send({ 
+                .send({
                     from: this.account,
                     gas: 5000000,
                     gasPrice: '3000000000'
                 });
-        
+    
+            // Rest of your implementation...
             const txHash = tx.transactionHash;
-            console.log('✅ Smart contract transaction successful:', txHash);
-        
-            // Save to database
+            console.log('✅ Transaction successful:', txHash);
+    
             const invoice = this.invoiceRepository.create({
                 invoiceNo,
                 invoiceDate: new Date(invoiceDate),
@@ -1054,11 +1044,17 @@ export class InvoiceService {
                 isFinal,
                 transactionHash: txHash,
             });
-        
+    
             const savedInvoice = await this.invoiceRepository.save(invoice);
             return this.findOne(savedInvoice.invoiceId);
+    
         } catch (error) {
-            console.error('❌ Invoice creation error:', error);
+            console.error('❌ Detailed error:', {
+                message: error.message,
+                stack: error.stack,
+                data: error.data,
+                code: error.code
+            });
             throw new Error(`Invoice creation failed: ${error.message}`);
         }
     }
