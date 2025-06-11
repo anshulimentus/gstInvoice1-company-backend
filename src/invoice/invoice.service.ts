@@ -1118,49 +1118,58 @@ export class InvoiceService {
 
     async updateInvoice(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
         try {
-            const invoice = await this.findOne(id);
-
-            if (!invoice) {
-                throw new NotFoundException('Invoice not found');
-            }
-
-            // Update on blockchain if grandTotal changed
-            if (updateInvoiceDto.grandTotal && updateInvoiceDto.grandTotal !== invoice.grandTotal) {
-                const txHash = await this.updateInvoiceOnChain(
-                    invoice.invoiceNo,
-                    updateInvoiceDto.grandTotal
-                );
-                updateInvoiceDto.transactionHash = txHash;
-            }
-
-            // Prepare update data
-            const updateData: any = { ...updateInvoiceDto };
-
-            // Convert date if provided
-            if (updateInvoiceDto.invoiceDate) {
-                updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
-            }
-
-            // Update seller and buyer references
-            if (updateInvoiceDto.sellerId) {
-                updateData.seller = { id: updateInvoiceDto.sellerId };
-            }
-            if (updateInvoiceDto.buyerId) {
-                updateData.buyer = { id: updateInvoiceDto.buyerId };
-            }
-
-            // Update database
-            // await this.invoiceRepository.update(id, updateData);
-            Object.assign(invoice, updateData);
-            return await this.invoiceRepository.save(invoice);
-
-
-            return this.findOne(id);
+          const invoice = await this.findOne(id);
+          if (!invoice) {
+            throw new NotFoundException('Invoice not found');
+          }
+      
+          // Prepare update data
+          const updateData: any = { ...updateInvoiceDto };
+      
+          // Convert date
+          if (updateInvoiceDto.invoiceDate) {
+            updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
+          }
+      
+          // Update seller and buyer references
+          if (updateInvoiceDto.sellerId) {
+            updateData.seller = { id: updateInvoiceDto.sellerId };
+          }
+          if (updateInvoiceDto.buyerId) {
+            updateData.buyer = { id: updateInvoiceDto.buyerId };
+          }
+      
+          // 🔁 If any invoice data is updated, sync with blockchain
+          const txHash = await this.contract.methods
+            .updateInvoice(
+              invoice.invoiceNo,
+              updateInvoiceDto.invoiceDate || invoice.invoiceDate,
+              updateInvoiceDto.supplyType || invoice.supplyType,
+              (updateInvoiceDto.items ?? []).map(i => i.serialNo),
+              (updateInvoiceDto.items ?? []).map(i => i.name),
+              (updateInvoiceDto.items ?? []).map(i => i.quantity),
+              (updateInvoiceDto.items ?? []).map(i => i.unitPrice),
+              (updateInvoiceDto.items ?? []).map(i => i.gstRate),
+              (updateInvoiceDto.items ?? []).map(i => i.totalAmount),                  // totalAmounts
+              updateInvoiceDto.totalTaxableValue || invoice.totalTaxableValue,
+              updateInvoiceDto.totalGstAmount || invoice.totalGstAmount,
+              updateInvoiceDto.grandTotal || invoice.grandTotal,
+              updateInvoiceDto.paymentTerms || invoice.paymentTerms,
+              updateInvoiceDto.isFinal ?? invoice.isFinal
+            )
+            .send({ from: this.account, gas: 5000000, gasPrice: '3000000000' });
+      
+          updateData.transactionHash = txHash.transactionHash;
+      
+          // Save to DB
+          Object.assign(invoice, updateData);
+          return await this.invoiceRepository.save(invoice);
         } catch (error) {
-            // console.error('Failed to update invoice', error);
-            throw error;
+          console.error('Failed to update invoice', error);
+          throw error;
         }
-    }
+      }
+      
 
     async deleteInvoice(id: string): Promise<void> {
         const result = await this.invoiceRepository.delete(id);
