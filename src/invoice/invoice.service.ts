@@ -983,15 +983,22 @@ export class InvoiceService {
             buyerId,
           } = createInvoiceDto;
       
+          console.log('🚀 Received invoice DTO:', createInvoiceDto);
+      
           // 1. Check if invoice already exists on-chain
           try {
+            console.log(`🔍 Checking if invoice ${invoiceNo} exists on-chain...`);
             const existing = await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
             if (existing && existing.invoiceNumber) {
+              console.warn(`⚠️ Invoice ${invoiceNo} already exists on-chain`);
               throw new Error(`Invoice ${invoiceNo} already exists`);
             }
           } catch (error) {
             if (!error.message.includes('Invoice not found')) {
+              console.error('❌ Error during invoice existence check:', error);
               throw error;
+            } else {
+              console.log('✅ Invoice does not exist on-chain. Proceeding...');
             }
           }
       
@@ -1003,7 +1010,9 @@ export class InvoiceService {
           const gstRates: number[] = [];
           const totalAmounts: number[] = [];
       
+          console.log('🧩 Extracting invoice items...');
           for (const item of items) {
+            console.log('➡️ Processing item:', item);
             productIDs.push(Number(item.serialNo));
             productNames.push(item.name);
             quantities.push(Number(item.quantity));
@@ -1011,6 +1020,15 @@ export class InvoiceService {
             gstRates.push(Number(item.gstRate));
             totalAmounts.push(Number(item.totalAmount));
           }
+      
+          console.log('✅ Extracted arrays:', {
+            productIDs,
+            productNames,
+            quantities,
+            unitPrices,
+            gstRates,
+            totalAmounts,
+          });
       
           // 3. Defensive check
           if (
@@ -1021,10 +1039,12 @@ export class InvoiceService {
             unitPrices.length !== gstRates.length ||
             gstRates.length !== totalAmounts.length
           ) {
+            console.error('❌ Mismatch in item array lengths');
             throw new Error("Invoice item arrays must be of the same non-zero length");
           }
       
           // 4. Call smart contract method
+          console.log('📤 Sending transaction to create invoice on blockchain...');
           const tx = await this.contract.methods
             .createInvoice(
               invoiceNo,
@@ -1067,11 +1087,15 @@ export class InvoiceService {
             transactionHash: txHash,
           });
       
+          console.log('💾 Saving invoice to database:', invoice);
           const savedInvoice = await this.invoiceRepository.save(invoice);
-          return this.findOne(savedInvoice.invoiceId);
+      
+          const finalInvoice = await this.findOne(savedInvoice.invoiceId);
+          console.log('✅ Final saved invoice from DB:', finalInvoice);
+          return finalInvoice;
       
         } catch (error) {
-          console.error('❌ Detailed error:', {
+          console.error('❌ Detailed error during invoice creation:', {
             message: error.message,
             stack: error.stack,
             data: error.data,
@@ -1080,6 +1104,7 @@ export class InvoiceService {
           throw new Error(`Invoice creation failed: ${error.message}`);
         }
       }
+      
       
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
