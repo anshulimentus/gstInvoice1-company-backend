@@ -1132,10 +1132,12 @@ export class InvoiceService {
       
           // 2. ✅ Fetch all invoices from blockchain
           const chainInvoicesRaw = await this.contract.methods.getAllInvoices().call();
+          const sanitizedInvoice = this.convertBigIntToString(chainInvoicesRaw);
       
           // 3. 🔁 Match blockchain invoices with DB invoices by `invoiceNo`
-          const mergedInvoices = dbInvoices.map((dbInv) => {
-            const chainInv = chainInvoicesRaw.find(
+          const mergedInvoices = await Promise.all(dbInvoices.map(async (dbInv) => {
+            const resolvedSanitizedInvoice = await sanitizedInvoice;
+            const chainInv = resolvedSanitizedInvoice.find(
               (ci) => ci.invoiceNumber === dbInv.invoiceNo
             );
       
@@ -1155,7 +1157,7 @@ export class InvoiceService {
               // Invoice not on-chain, return as is from DB
               return dbInv;
             }
-          });
+          }));
       
           return mergedInvoices;
         } catch (error) {
@@ -1380,4 +1382,23 @@ export class InvoiceService {
             throw error;
         }
     }
+
+    async convertBigIntToString(obj: any): Promise<any> {
+        if (Array.isArray(obj)) {
+          const result = await Promise.all(obj.map(item => this.convertBigIntToString(item)));
+          return result;
+        } else if (typeof obj === 'object' && obj !== null) {
+          const newObj: any = {};
+          for (const key of Object.keys(obj)) {
+            const value = obj[key];
+            newObj[key] = typeof value === 'bigint'
+              ? value.toString()
+              : await this.convertBigIntToString(value);
+          }
+          return newObj;
+        }
+        return obj;
+      }
+      
 }
+
