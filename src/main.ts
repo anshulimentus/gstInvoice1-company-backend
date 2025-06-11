@@ -44,9 +44,10 @@ async function bootstrap() {
    const uploadPath = join(__dirname, '..', 'uploads');
   //  console.log(`📁 Serving static files from: ${uploadPath}`);
 
-
-  // await app.listen(3001);
-  // console.log("✅ NestJs server running on http://localhost:3001");
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
+  console.log(`✅ App listening on port ${port}`);
+  
 }
 bootstrap();
 
