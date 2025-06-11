@@ -1093,27 +1093,77 @@ export class InvoiceService {
       
       
 
+    // async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
+    //     const invoices = await this.invoiceRepository.find({
+    //         where: {
+    //             seller: {
+    //                 tenantId: tenantId,
+    //             },
+    //         },
+    //         relations: ['seller', 'buyer'], // ensures seller and buyer are fetched
+    //         order: {
+    //             createdAt: 'DESC',
+    //         },
+    //     });
+    //     info(`Fetching invoices for tenant ID: ${tenantId}, \t found: ${invoices} invoices`);
+
+    //     if (!invoices || invoices.length === 0) {
+    //         throw new NotFoundException(`No invoices found for tenantId: ${tenantId}`);
+    //     }
+
+    //     console.log("🚀 ~ InvoiceService ~ findInvoicesByTenantId ~ invoices:", invoices)
+    //     return invoices;
+    // }
+
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
-        const invoices = await this.invoiceRepository.find({
+        try {
+          // 1. ✅ Fetch invoices from database (full invoice data)
+          const dbInvoices = await this.invoiceRepository.find({
             where: {
-                seller: {
-                    tenantId: tenantId,
-                },
+              seller: { tenantId },
             },
-            relations: ['seller', 'buyer'], // ensures seller and buyer are fetched
-            order: {
-                createdAt: 'DESC',
-            },
-        });
-        info(`Fetching invoices for tenant ID: ${tenantId}, \t found: ${invoices} invoices`);
-
-        if (!invoices || invoices.length === 0) {
+            relations: ['seller', 'buyer'],
+            order: { createdAt: 'DESC' },
+          });
+      
+          if (!dbInvoices || dbInvoices.length === 0) {
             throw new NotFoundException(`No invoices found for tenantId: ${tenantId}`);
+          }
+      
+          // 2. ✅ Fetch all invoices from blockchain
+          const chainInvoicesRaw = await this.contract.methods.getAllInvoices().call();
+      
+          // 3. 🔁 Match blockchain invoices with DB invoices by `invoiceNo`
+          const mergedInvoices = dbInvoices.map((dbInv) => {
+            const chainInv = chainInvoicesRaw.find(
+              (ci) => ci.invoiceNumber === dbInv.invoiceNo
+            );
+      
+            if (chainInv) {
+              return {
+                ...dbInv, // base from DB (has buyer/seller etc.)
+                invoiceDate: chainInv.invoiceDate || dbInv.invoiceDate,
+                supplyType: chainInv.supplyType || dbInv.supplyType,
+                items: chainInv.items?.length ? chainInv.items : dbInv.items,
+                totalTaxableValue: chainInv.totalTaxableValue || dbInv.totalTaxableValue,
+                totalGstAmount: chainInv.totalGstAmount || dbInv.totalGstAmount,
+                grandTotal: chainInv.grandTotal || dbInv.grandTotal,
+                paymentTerms: chainInv.paymentTerms || dbInv.paymentTerms,
+                isFinal: chainInv.isFinal ?? dbInv.isFinal,
+              };
+            } else {
+              // Invoice not on-chain, return as is from DB
+              return dbInv;
+            }
+          });
+      
+          return mergedInvoices;
+        } catch (error) {
+          console.error('❌ Error in findInvoicesByTenantId:', error);
+          throw error;
         }
-
-        console.log("🚀 ~ InvoiceService ~ findInvoicesByTenantId ~ invoices:", invoices)
-        return invoices;
-    }
+      }
+      
 
 
     async updateInvoice(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
