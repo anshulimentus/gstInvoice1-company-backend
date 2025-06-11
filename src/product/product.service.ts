@@ -232,7 +232,7 @@ export class ProductService {
     async create(createProductDto: CreateProductDto): Promise<Product> {
         // console.log("🚀 ~ ProductService ~ create ~ createProductDto:", createProductDto)
         // Convert price to smallest unit (e.g., paise, cents)
-        const onChainPrice = Math.round(createProductDto.unitPrice * 100);
+        const onChainPrice = Math.round(createProductDto.unitPrice);
 
         // Step 1: Save to DB first to get auto-generated productID
         const newProduct = this.productRepository.create({
