@@ -45,7 +45,7 @@ async function bootstrap() {
   //  console.log(`📁 Serving static files from: ${uploadPath}`);
 
 
-  await app.listen(3001);
+  // await app.listen(3001);
   // console.log("✅ NestJs server running on http://localhost:3001");
 }
 bootstrap();
