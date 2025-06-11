@@ -986,21 +986,7 @@ export class InvoiceService {
           console.log('🚀 Received invoice DTO:', createInvoiceDto);
       
           // 1. Check if invoice already exists on-chain
-          try {
-            console.log(`🔍 Checking if invoice ${invoiceNo} exists on-chain...`);
-            const existing = await this.contract.methods.getInvoiceByNumber(invoiceNo).call();
-            if (existing && existing.invoiceNumber) {
-              console.warn(`⚠️ Invoice ${invoiceNo} already exists on-chain`);
-              throw new Error(`Invoice ${invoiceNo} already exists`);
-            }
-          } catch (error) {
-            if (!error.message.includes('Invoice not found')) {
-              console.error('❌ Error during invoice existence check:', error);
-              throw error;
-            } else {
-              console.log('✅ Invoice does not exist on-chain. Proceeding...');
-            }
-          }
+          
       
           // 2. Extract parallel arrays from items
           const productIDs: number[] = [];
