@@ -121,7 +121,7 @@ export class InvoiceController {
     return await this.invoiceService.approveInvoiceByBuyer(invoiceId, walletAddress);
   }
 
-  @Patch('buyer/reject/:invoiceId')
+  @Patch('buyer/reject/:invoiceId/:walletAddress')
   // @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.User)
   @ApiOperation({ summary: 'Reject invoice by buyer' })
