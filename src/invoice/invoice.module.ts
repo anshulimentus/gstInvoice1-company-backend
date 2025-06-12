@@ -10,7 +10,7 @@ import { Customer } from 'src/customer/entities/customer.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Invoice, InvoiceItem, Customer]),
+    TypeOrmModule.forFeature([Invoice, Customer]),
     ConfigModule.forRoot(), // For accessing environment variables
   ],
   controllers: [InvoiceController],
