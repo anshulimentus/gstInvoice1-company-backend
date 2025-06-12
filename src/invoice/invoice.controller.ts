@@ -48,8 +48,8 @@ export class InvoiceController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.User)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.User)
   @ApiOperation({ summary: 'Get all invoices' })
   @ApiResponse({ status: 200, description: 'List of all invoices' })
   async findAll() {

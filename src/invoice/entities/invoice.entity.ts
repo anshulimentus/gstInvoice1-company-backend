@@ -62,6 +62,12 @@ export class Invoice {
   @CreateDateColumn({ name: 'createdat' })
   createdAt: Date;
 
-  @Column({ type: 'uuid' }) // Store the tenantId from Company
-    company_tenant_id: string;
+  @Column({ default: 'pending' })
+  status: 'pending' | 'approved' | 'rejected';
+
+  @Column({ nullable: true })
+  buyerApprovalDate: Date;
+
+  @Column({ nullable: true })
+  approvedBy: string; 
 }
