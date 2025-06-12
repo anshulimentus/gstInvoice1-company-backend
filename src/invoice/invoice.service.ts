@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, InternalServerErrorException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +9,7 @@ import Web3 from 'web3';
 import * as PDFDocument from 'pdfkit';
 import * as chalk from 'chalk';
 import { info } from 'console';
+import { Customer } from 'src/customer/entities/customer.entity';
 
 @Injectable()
 export class InvoiceService {
@@ -22,7 +23,8 @@ export class InvoiceService {
 
     constructor(
         @InjectRepository(Invoice)
-        private invoiceRepository: Repository<Invoice>
+        private invoiceRepository: Repository<Invoice>,
+        private customerRepository: Repository<Customer>,
     ) {
         // Validate environment variables
         if (!process.env.PROVIDER_URL) {
@@ -966,132 +968,132 @@ export class InvoiceService {
         }
     }
 
- 
+
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
-          const {
-            invoiceNo,
-            invoiceDate,
-            supplyType,
-            items,
-            totalTaxableValue,
-            totalGstAmount,
-            grandTotal,
-            paymentTerms,
-            isFinal,
-            sellerId,
-            buyerId,
-          } = createInvoiceDto;
-      
-          console.log('🚀 Received invoice DTO:', createInvoiceDto);
-      
-          // 1. Check if invoice already exists on-chain
-          
-      
-          // 2. Extract parallel arrays from items
-          const productIDs: number[] = [];
-          const productNames: string[] = [];
-          const quantities: number[] = [];
-          const unitPrices: number[] = [];
-          const gstRates: number[] = [];
-          const totalAmounts: number[] = [];
-      
-          console.log('🧩 Extracting invoice items...');
-          for (const item of items) {
-            console.log('➡️ Processing item:', item);
-            productIDs.push(Number(item.serialNo));
-            productNames.push(item.name);
-            quantities.push(Number(item.quantity));
-            unitPrices.push(Number(item.unitPrice));
-            gstRates.push(Number(item.gstRate));
-            totalAmounts.push(Number(item.totalAmount));
-          }
-      
-          console.log('✅ Extracted arrays:', {
-            productIDs,
-            productNames,
-            quantities,
-            unitPrices,
-            gstRates,
-            totalAmounts,
-          });
-      
-          // 3. Defensive check
-          if (
-            !items.length ||
-            productIDs.length !== productNames.length ||
-            productNames.length !== quantities.length ||
-            quantities.length !== unitPrices.length ||
-            unitPrices.length !== gstRates.length ||
-            gstRates.length !== totalAmounts.length
-          ) {
-            console.error('❌ Mismatch in item array lengths');
-            throw new Error("Invoice item arrays must be of the same non-zero length");
-          }
-      
-          // 4. Call smart contract method
-          console.log('📤 Sending transaction to create invoice on blockchain...');
-          const tx = await this.contract.methods
-            .createInvoice(
-              invoiceNo,
-              invoiceDate,
-              supplyType,
-              productIDs,
-              productNames,
-              quantities,
-              unitPrices,
-              gstRates,
-              totalAmounts,
-              totalTaxableValue,
-              totalGstAmount,
-              grandTotal,
-              paymentTerms,
-              isFinal
-            )
-            .send({
-              from: this.account,
-              gas: 5000000,
-              gasPrice: '3000000000',
+            const {
+                invoiceNo,
+                invoiceDate,
+                supplyType,
+                items,
+                totalTaxableValue,
+                totalGstAmount,
+                grandTotal,
+                paymentTerms,
+                isFinal,
+                sellerId,
+                buyerId,
+            } = createInvoiceDto;
+
+            console.log('🚀 Received invoice DTO:', createInvoiceDto);
+
+            // 1. Check if invoice already exists on-chain
+
+
+            // 2. Extract parallel arrays from items
+            const productIDs: number[] = [];
+            const productNames: string[] = [];
+            const quantities: number[] = [];
+            const unitPrices: number[] = [];
+            const gstRates: number[] = [];
+            const totalAmounts: number[] = [];
+
+            console.log('🧩 Extracting invoice items...');
+            for (const item of items) {
+                console.log('➡️ Processing item:', item);
+                productIDs.push(Number(item.serialNo));
+                productNames.push(item.name);
+                quantities.push(Number(item.quantity));
+                unitPrices.push(Number(item.unitPrice));
+                gstRates.push(Number(item.gstRate));
+                totalAmounts.push(Number(item.totalAmount));
+            }
+
+            console.log('✅ Extracted arrays:', {
+                productIDs,
+                productNames,
+                quantities,
+                unitPrices,
+                gstRates,
+                totalAmounts,
             });
-      
-          const txHash = tx.transactionHash;
-          console.log('✅ Transaction successful:', txHash);
-      
-          // 5. Store invoice in DB
-          const invoice = this.invoiceRepository.create({
-            invoiceNo,
-            invoiceDate: new Date(invoiceDate),
-            supplyType,
-            seller: { id: sellerId } as any,
-            buyer: { id: buyerId } as any,
-            items,
-            totalTaxableValue,
-            totalGstAmount,
-            grandTotal,
-            paymentTerms,
-            isFinal,
-            transactionHash: txHash,
-          });
-      
-          console.log('💾 Saving invoice to database:', invoice);
-          const savedInvoice = await this.invoiceRepository.save(invoice);
-      
-          const finalInvoice = await this.findOne(savedInvoice.invoiceId);
-          console.log('✅ Final saved invoice from DB:', finalInvoice);
-          return finalInvoice;
-      
+
+            // 3. Defensive check
+            if (
+                !items.length ||
+                productIDs.length !== productNames.length ||
+                productNames.length !== quantities.length ||
+                quantities.length !== unitPrices.length ||
+                unitPrices.length !== gstRates.length ||
+                gstRates.length !== totalAmounts.length
+            ) {
+                console.error('❌ Mismatch in item array lengths');
+                throw new Error("Invoice item arrays must be of the same non-zero length");
+            }
+
+            // 4. Call smart contract method
+            console.log('📤 Sending transaction to create invoice on blockchain...');
+            const tx = await this.contract.methods
+                .createInvoice(
+                    invoiceNo,
+                    invoiceDate,
+                    supplyType,
+                    productIDs,
+                    productNames,
+                    quantities,
+                    unitPrices,
+                    gstRates,
+                    totalAmounts,
+                    totalTaxableValue,
+                    totalGstAmount,
+                    grandTotal,
+                    paymentTerms,
+                    isFinal
+                )
+                .send({
+                    from: this.account,
+                    gas: 5000000,
+                    gasPrice: '3000000000',
+                });
+
+            const txHash = tx.transactionHash;
+            console.log('✅ Transaction successful:', txHash);
+
+            // 5. Store invoice in DB
+            const invoice = this.invoiceRepository.create({
+                invoiceNo,
+                invoiceDate: new Date(invoiceDate),
+                supplyType,
+                seller: { id: sellerId } as any,
+                buyer: { id: buyerId } as any,
+                items,
+                totalTaxableValue,
+                totalGstAmount,
+                grandTotal,
+                paymentTerms,
+                isFinal,
+                transactionHash: txHash,
+            });
+
+            console.log('💾 Saving invoice to database:', invoice);
+            const savedInvoice = await this.invoiceRepository.save(invoice);
+
+            const finalInvoice = await this.findOne(savedInvoice.invoiceId);
+            console.log('✅ Final saved invoice from DB:', finalInvoice);
+            return finalInvoice;
+
         } catch (error) {
-          console.error('❌ Detailed error during invoice creation:', {
-            message: error.message,
-            stack: error.stack,
-            data: error.data,
-            code: error.code
-          });
-          throw new Error(`Invoice creation failed: ${error.message}`);
+            console.error('❌ Detailed error during invoice creation:', {
+                message: error.message,
+                stack: error.stack,
+                data: error.data,
+                code: error.code
+            });
+            throw new Error(`Invoice creation failed: ${error.message}`);
         }
-      }
-      
-      
+    }
+
+
 
     // async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
     //     const invoices = await this.invoiceRepository.find({
@@ -1117,111 +1119,313 @@ export class InvoiceService {
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         try {
-          // 1. ✅ Fetch invoices from database (full invoice data)
-          const dbInvoices = await this.invoiceRepository.find({
-            where: {
-              seller: { tenantId },
-            },
-            relations: ['seller', 'buyer'],
-            order: { createdAt: 'DESC' },
-          });
-      
-          if (!dbInvoices || dbInvoices.length === 0) {
-            throw new NotFoundException(`No invoices found for tenantId: ${tenantId}`);
-          }
-      
-          // 2. ✅ Fetch all invoices from blockchain
-          const chainInvoicesRaw = await this.contract.methods.getAllInvoices().call();
-          const sanitizedInvoice = this.convertBigIntToString(chainInvoicesRaw);
-      
-          // 3. 🔁 Match blockchain invoices with DB invoices by `invoiceNo`
-          const mergedInvoices = await Promise.all(dbInvoices.map(async (dbInv) => {
-            const resolvedSanitizedInvoice = await sanitizedInvoice;
-            const chainInv = resolvedSanitizedInvoice.find(
-              (ci) => ci.invoiceNumber === dbInv.invoiceNo
-            );
-      
-            if (chainInv) {
-              return {
-                ...dbInv, // base from DB (has buyer/seller etc.)
-                invoiceDate: chainInv.invoiceDate || dbInv.invoiceDate,
-                supplyType: chainInv.supplyType || dbInv.supplyType,
-                items: chainInv.items?.length ? chainInv.items : dbInv.items,
-                totalTaxableValue: chainInv.totalTaxableValue || dbInv.totalTaxableValue,
-                totalGstAmount: chainInv.totalGstAmount || dbInv.totalGstAmount,
-                grandTotal: chainInv.grandTotal || dbInv.grandTotal,
-                paymentTerms: chainInv.paymentTerms || dbInv.paymentTerms,
-                isFinal: chainInv.isFinal ?? dbInv.isFinal,
-              };
-            } else {
-              // Invoice not on-chain, return as is from DB
-              return dbInv;
-            }
-          }));
-      
-          return mergedInvoices;
-        } catch (error) {
-          console.error('❌ Error in findInvoicesByTenantId:', error);
-          throw error;
-        }
-      }
-      
+            // 1. ✅ Fetch invoices from database (full invoice data)
+            const dbInvoices = await this.invoiceRepository.find({
+                where: {
+                    seller: { tenantId },
+                },
+                relations: ['seller', 'buyer'],
+                order: { createdAt: 'DESC' },
+            });
 
+            if (!dbInvoices || dbInvoices.length === 0) {
+                throw new NotFoundException(`No invoices found for tenantId: ${tenantId}`);
+            }
+
+            // 2. ✅ Fetch all invoices from blockchain
+            const chainInvoicesRaw = await this.contract.methods.getAllInvoices().call();
+            const sanitizedInvoice = this.convertBigIntToString(chainInvoicesRaw);
+
+            // 3. 🔁 Match blockchain invoices with DB invoices by `invoiceNo`
+            const mergedInvoices = await Promise.all(dbInvoices.map(async (dbInv) => {
+                const resolvedSanitizedInvoice = await sanitizedInvoice;
+                const chainInv = resolvedSanitizedInvoice.find(
+                    (ci) => ci.invoiceNumber === dbInv.invoiceNo
+                );
+
+                if (chainInv) {
+                    return {
+                        ...dbInv, // base from DB (has buyer/seller etc.)
+                        invoiceDate: chainInv.invoiceDate || dbInv.invoiceDate,
+                        supplyType: chainInv.supplyType || dbInv.supplyType,
+                        items: chainInv.items?.length ? chainInv.items : dbInv.items,
+                        totalTaxableValue: chainInv.totalTaxableValue || dbInv.totalTaxableValue,
+                        totalGstAmount: chainInv.totalGstAmount || dbInv.totalGstAmount,
+                        grandTotal: chainInv.grandTotal || dbInv.grandTotal,
+                        paymentTerms: chainInv.paymentTerms || dbInv.paymentTerms,
+                        isFinal: chainInv.isFinal ?? dbInv.isFinal,
+                    };
+                } else {
+                    // Invoice not on-chain, return as is from DB
+                    return dbInv;
+                }
+            }));
+
+            return mergedInvoices;
+        } catch (error) {
+            console.error('❌ Error in findInvoicesByTenantId:', error);
+            throw error;
+        }
+    }
+
+
+
+/**
+   * Find all invoices for a buyer by their wallet address
+   * @param walletAddress - The wallet address of the buyer
+   * @returns Promise<Invoice[]>
+   */
+async findInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
+    // First find the customer by wallet address
+    const customer = await this.customerRepository.findOne({
+      where: { wallet_address: walletAddress }
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+    }
+
+    // Find all invoices for this customer
+    const invoices = await this.invoiceRepository.find({
+      where: { buyer: { id: customer.id } },
+      relations: ['seller', 'buyer'],
+      order: { createdAt: 'DESC' }
+    });
+
+    if (invoices.length === 0) {
+      throw new NotFoundException(`No invoices found for wallet address ${walletAddress}`);
+    }
+
+    return invoices;
+  }
+
+  /**
+   * Find pending invoices for a buyer by their wallet address
+   * @param walletAddress - The wallet address of the buyer
+   * @returns Promise<Invoice[]>
+   */
+  async findPendingInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
+    // First find the customer by wallet address
+    const customer = await this.customerRepository.findOne({
+      where: { wallet_address: walletAddress }
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+    }
+
+    // Find all pending invoices for this customer
+    const invoices = await this.invoiceRepository.find({
+      where: { 
+        buyer: { id: customer.id },
+        status: 'pending'
+      },
+      relations: ['seller', 'buyer'],
+      order: { createdAt: 'DESC' }
+    });
+
+    return invoices;
+  }
+
+  /**
+   * Approve an invoice by buyer
+   * @param invoiceId - The ID of the invoice to approve
+   * @param buyerWalletAddress - The wallet address of the buyer
+   * @returns Promise<any>
+   */
+  async approveInvoiceByBuyer(invoiceId: string, buyerWalletAddress: string): Promise<any> {
+    // Find the invoice with buyer details
+    const invoice = await this.invoiceRepository.findOne({
+      where: { invoiceId },
+      relations: ['buyer', 'seller']
+    });
+
+    if (!invoice) {
+      throw new NotFoundException(`Invoice with ID ${invoiceId} not found`);
+    }
+
+    // Verify that the buyer's wallet address matches
+    if (invoice.buyer.wallet_address !== buyerWalletAddress) {
+      throw new ForbiddenException('You are not authorized to approve this invoice');
+    }
+
+    // Check if invoice is already approved or rejected
+    if (invoice.status !== 'pending') {
+      throw new ForbiddenException(`Invoice is already ${invoice.status}`);
+    }
+
+    // Update invoice status to approved
+    invoice.status = 'approved';
+    invoice.buyerApprovalDate = new Date();
+    invoice.approvedBy = invoice.buyer.id;
+
+    const updatedInvoice = await this.invoiceRepository.save(invoice);
+
+    return {
+      invoiceId: updatedInvoice.invoiceId,
+      invoiceNo: updatedInvoice.invoiceNo,
+      status: updatedInvoice.status,
+      buyerApprovalDate: updatedInvoice.buyerApprovalDate,
+      approvedBy: updatedInvoice.approvedBy,
+      message: 'Invoice approved successfully'
+    };
+  }
+
+  /**
+   * Reject an invoice by buyer
+   * @param invoiceId - The ID of the invoice to reject
+   * @param buyerWalletAddress - The wallet address of the buyer
+   * @returns Promise<any>
+   */
+  async rejectInvoiceByBuyer(invoiceId: string, buyerWalletAddress: string): Promise<any> {
+    // Find the invoice with buyer details
+    const invoice = await this.invoiceRepository.findOne({
+      where: { invoiceId },
+      relations: ['buyer', 'seller']
+    });
+
+    if (!invoice) {
+      throw new NotFoundException(`Invoice with ID ${invoiceId} not found`);
+    }
+
+    // Verify that the buyer's wallet address matches
+    if (invoice.buyer.wallet_address !== buyerWalletAddress) {
+      throw new ForbiddenException('You are not authorized to reject this invoice');
+    }
+
+    // Check if invoice is already approved or rejected
+    if (invoice.status !== 'pending') {
+      throw new ForbiddenException(`Invoice is already ${invoice.status}`);
+    }
+
+    // Update invoice status to rejected
+    invoice.status = 'rejected';
+    invoice.buyerApprovalDate = new Date();
+    invoice.approvedBy = invoice.buyer.id;
+
+    const updatedInvoice = await this.invoiceRepository.save(invoice);
+
+    return {
+      invoiceId: updatedInvoice.invoiceId,
+      invoiceNo: updatedInvoice.invoiceNo,
+      status: updatedInvoice.status,
+      buyerApprovalDate: updatedInvoice.buyerApprovalDate,
+      approvedBy: updatedInvoice.approvedBy,
+      message: 'Invoice rejected successfully'
+    };
+  }
+
+  /**
+   * Get invoice statistics for a buyer
+   * @param walletAddress - The wallet address of the buyer
+   * @returns Promise<any>
+   */
+  async getBuyerInvoiceStats(walletAddress: string): Promise<any> {
+    // First find the customer by wallet address
+    const customer = await this.customerRepository.findOne({
+      where: { wallet_address: walletAddress }
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+    }
+
+    // Get invoice statistics
+    const totalInvoices = await this.invoiceRepository.count({
+      where: { buyer: { id: customer.id } }
+    });
+
+    const pendingInvoices = await this.invoiceRepository.count({
+      where: { buyer: { id: customer.id }, status: 'pending' }
+    });
+
+    const approvedInvoices = await this.invoiceRepository.count({
+      where: { buyer: { id: customer.id }, status: 'approved' }
+    });
+
+    const rejectedInvoices = await this.invoiceRepository.count({
+      where: { buyer: { id: customer.id }, status: 'rejected' }
+    });
+
+    // Get total amount from approved invoices
+    const totalAmountResult = await this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .select('SUM(invoice.grandTotal)', 'totalAmount')
+      .where('invoice.buyerId = :buyerId', { buyerId: customer.id })
+      .andWhere('invoice.status = :status', { status: 'approved' })
+      .getRawOne();
+
+    return {
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        walletAddress: customer.wallet_address
+      },
+      statistics: {
+        totalInvoices,
+        pendingInvoices,
+        approvedInvoices,
+        rejectedInvoices,
+        totalApprovedAmount: totalAmountResult?.totalAmount || 0
+      }
+    };
+  }
 
     async updateInvoice(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
         try {
-          const invoice = await this.findOne(id);
-          if (!invoice) {
-            throw new NotFoundException('Invoice not found');
-          }
-      
-          // Prepare update data
-          const updateData: any = { ...updateInvoiceDto };
-      
-          // Convert date
-          if (updateInvoiceDto.invoiceDate) {
-            updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
-          }
-      
-          // Update seller and buyer references
-          if (updateInvoiceDto.sellerId) {
-            updateData.seller = { id: updateInvoiceDto.sellerId };
-          }
-          if (updateInvoiceDto.buyerId) {
-            updateData.buyer = { id: updateInvoiceDto.buyerId };
-          }
-      
-          // 🔁 If any invoice data is updated, sync with blockchain
-          const txHash = await this.contract.methods
-            .updateInvoice(
-              invoice.invoiceNo,
-              updateInvoiceDto.invoiceDate || invoice.invoiceDate,
-              updateInvoiceDto.supplyType || invoice.supplyType,
-              (updateInvoiceDto.items ?? []).map(i => i.serialNo),
-              (updateInvoiceDto.items ?? []).map(i => i.name),
-              (updateInvoiceDto.items ?? []).map(i => i.quantity),
-              (updateInvoiceDto.items ?? []).map(i => i.unitPrice),
-              (updateInvoiceDto.items ?? []).map(i => i.gstRate),
-              (updateInvoiceDto.items ?? []).map(i => i.totalAmount),                  // totalAmounts
-              updateInvoiceDto.totalTaxableValue || invoice.totalTaxableValue,
-              updateInvoiceDto.totalGstAmount || invoice.totalGstAmount,
-              updateInvoiceDto.grandTotal || invoice.grandTotal,
-              updateInvoiceDto.paymentTerms || invoice.paymentTerms,
-              updateInvoiceDto.isFinal ?? invoice.isFinal
-            )
-            .send({ from: this.account, gas: 5000000, gasPrice: '3000000000' });
-      
-          updateData.transactionHash = txHash.transactionHash;
-      
-          // Save to DB
-          Object.assign(invoice, updateData);
-          return await this.invoiceRepository.save(invoice);
+            const invoice = await this.findOne(id);
+            if (!invoice) {
+                throw new NotFoundException('Invoice not found');
+            }
+
+            // Prepare update data
+            const updateData: any = { ...updateInvoiceDto };
+
+            // Convert date
+            if (updateInvoiceDto.invoiceDate) {
+                updateData.invoiceDate = new Date(updateInvoiceDto.invoiceDate);
+            }
+
+            // Update seller and buyer references
+            if (updateInvoiceDto.sellerId) {
+                updateData.seller = { id: updateInvoiceDto.sellerId };
+            }
+            if (updateInvoiceDto.buyerId) {
+                updateData.buyer = { id: updateInvoiceDto.buyerId };
+            }
+
+            // 🔁 If any invoice data is updated, sync with blockchain
+            const txHash = await this.contract.methods
+                .updateInvoice(
+                    invoice.invoiceNo,
+                    updateInvoiceDto.invoiceDate || invoice.invoiceDate,
+                    updateInvoiceDto.supplyType || invoice.supplyType,
+                    (updateInvoiceDto.items ?? []).map(i => i.serialNo),
+                    (updateInvoiceDto.items ?? []).map(i => i.name),
+                    (updateInvoiceDto.items ?? []).map(i => i.quantity),
+                    (updateInvoiceDto.items ?? []).map(i => i.unitPrice),
+                    (updateInvoiceDto.items ?? []).map(i => i.gstRate),
+                    (updateInvoiceDto.items ?? []).map(i => i.totalAmount),                  // totalAmounts
+                    updateInvoiceDto.totalTaxableValue || invoice.totalTaxableValue,
+                    updateInvoiceDto.totalGstAmount || invoice.totalGstAmount,
+                    updateInvoiceDto.grandTotal || invoice.grandTotal,
+                    updateInvoiceDto.paymentTerms || invoice.paymentTerms,
+                    updateInvoiceDto.isFinal ?? invoice.isFinal
+                )
+                .send({ from: this.account, gas: 5000000, gasPrice: '3000000000' });
+
+            updateData.transactionHash = txHash.transactionHash;
+
+            // Save to DB
+            Object.assign(invoice, updateData);
+            return await this.invoiceRepository.save(invoice);
         } catch (error) {
-          console.error('Failed to update invoice', error);
-          throw error;
+            console.error('Failed to update invoice', error);
+            throw error;
         }
-      }
-      
+    }
+
 
     async deleteInvoice(id: string): Promise<void> {
         const result = await this.invoiceRepository.delete(id);
@@ -1385,20 +1589,20 @@ export class InvoiceService {
 
     async convertBigIntToString(obj: any): Promise<any> {
         if (Array.isArray(obj)) {
-          const result = await Promise.all(obj.map(item => this.convertBigIntToString(item)));
-          return result;
+            const result = await Promise.all(obj.map(item => this.convertBigIntToString(item)));
+            return result;
         } else if (typeof obj === 'object' && obj !== null) {
-          const newObj: any = {};
-          for (const key of Object.keys(obj)) {
-            const value = obj[key];
-            newObj[key] = typeof value === 'bigint'
-              ? value.toString()
-              : await this.convertBigIntToString(value);
-          }
-          return newObj;
+            const newObj: any = {};
+            for (const key of Object.keys(obj)) {
+                const value = obj[key];
+                newObj[key] = typeof value === 'bigint'
+                    ? value.toString()
+                    : await this.convertBigIntToString(value);
+            }
+            return newObj;
         }
         return obj;
-      }
-      
+    }
+
 }
 

@@ -28,13 +28,23 @@ import { RolesGuard } from "src/auth/roles.guard";
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
 import { Roles } from "src/auth/roles.decorator";
 import { Role } from "src/users/roles.enum";
+import { Customer } from 'src/customer/entities/customer.entity';
 import { info } from 'console';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Invoice } from './entities/invoice.entity';
 
 
 @ApiTags('invoices')
 @Controller('invoices')
 export class InvoiceController {
-  constructor(private readonly invoiceService: InvoiceService) { }
+  constructor(
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
+    @InjectRepository(Customer)
+    private readonly customerRepository: Repository<Customer>,
+    private readonly invoiceService: InvoiceService,
+  ) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,8 +58,8 @@ export class InvoiceController {
   }
 
   @Get()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.User)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Get all invoices' })
   @ApiResponse({ status: 200, description: 'List of all invoices' })
   async findAll() {
@@ -66,6 +76,76 @@ export class InvoiceController {
   @ApiResponse({ status: 404, description: 'Invoice not found' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.invoiceService.findOne(id);
+  }
+
+  @Get('buyer/wallet/:walletAddress')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @ApiOperation({ summary: 'Get all invoices for a buyer by wallet address' })
+  @ApiParam({ name: 'walletAddress', description: 'Wallet address of the buyer' })
+  @ApiResponse({ status: 200, description: 'List of invoices for the buyer' })
+  @ApiResponse({ status: 404, description: 'No invoices found for this wallet address' })
+  async findInvoicesByBuyerWallet(@Param('walletAddress') walletAddress: string) {
+    console.log(`Fetching invoices for buyer wallet: ${walletAddress}`);
+    return await this.invoiceService.findInvoicesByBuyerWallet(walletAddress);
+  }
+
+  @Get('buyer/wallet/:walletAddress/pending')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @ApiOperation({ summary: 'Get pending invoices for a buyer by wallet address' })
+  @ApiParam({ name: 'walletAddress', description: 'Wallet address of the buyer' })
+  @ApiResponse({ status: 200, description: 'List of pending invoices for the buyer' })
+  @ApiResponse({ status: 404, description: 'No pending invoices found for this wallet address' })
+  async findPendingInvoicesByBuyerWallet(@Param('walletAddress') walletAddress: string) {
+    console.log(`Fetching pending invoices for buyer wallet: ${walletAddress}`);
+    return await this.invoiceService.findPendingInvoicesByBuyerWallet(walletAddress);
+  }
+
+  @Patch('buyer/approve/:invoiceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @ApiOperation({ summary: 'Approve invoice by buyer' })
+  @ApiParam({ name: 'invoiceId', description: 'Invoice UUID' })
+  @ApiResponse({ status: 200, description: 'Invoice approved successfully' })
+  @ApiResponse({ status: 404, description: 'Invoice not found' })
+  @ApiResponse({ status: 403, description: 'Not authorized to approve this invoice' })
+  async approveInvoiceByBuyer(
+    @Param('invoiceId', ParseUUIDPipe) invoiceId: string,
+    @Request() req: any
+  ) {
+    // Get wallet address from JWT token or request body
+    const buyerWalletAddress = req.user.walletAddress; // Assuming wallet address is in JWT
+    return await this.invoiceService.approveInvoiceByBuyer(invoiceId, buyerWalletAddress);
+  }
+
+  @Patch('buyer/reject/:invoiceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @ApiOperation({ summary: 'Reject invoice by buyer' })
+  @ApiParam({ name: 'invoiceId', description: 'Invoice UUID' })
+  @ApiResponse({ status: 200, description: 'Invoice rejected successfully' })
+  @ApiResponse({ status: 404, description: 'Invoice not found' })
+  @ApiResponse({ status: 403, description: 'Not authorized to reject this invoice' })
+  async rejectInvoiceByBuyer(
+    @Param('invoiceId', ParseUUIDPipe) invoiceId: string,
+    @Request() req: any
+  ) {
+    // Get wallet address from JWT token or request body
+    const buyerWalletAddress = req.user.walletAddress; // Assuming wallet address is in JWT
+    return await this.invoiceService.rejectInvoiceByBuyer(invoiceId, buyerWalletAddress);
+  }
+
+  @Get('buyer/wallet/:walletAddress/statistics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @ApiOperation({ summary: 'Get invoice statistics for a buyer by wallet address' })
+  @ApiParam({ name: 'walletAddress', description: 'Wallet address of the buyer' })
+  @ApiResponse({ status: 200, description: 'Invoice statistics for the buyer' })
+  @ApiResponse({ status: 404, description: 'Buyer not found' })
+  async getBuyerInvoiceStatistics(@Param('walletAddress') walletAddress: string) {
+    console.log(`Fetching invoice statistics for buyer wallet: ${walletAddress}`);
+    return await this.invoiceService.getBuyerInvoiceStats(walletAddress);
   }
 
   @Get(':id/download')

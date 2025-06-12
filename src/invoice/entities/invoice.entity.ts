@@ -62,12 +62,12 @@ export class Invoice {
   @CreateDateColumn({ name: 'createdat' })
   createdAt: Date;
 
-  // @Column({ default: 'pending' })
-  // status: 'pending' | 'approved' | 'rejected';
+  @Column({ default: 'pending' })
+  status: 'pending' | 'approved' | 'rejected';
 
-  // @Column({ nullable: true })
-  // buyerApprovalDate: Date;
+  @Column({ nullable: true })
+  buyerApprovalDate: Date;
 
-  // @Column({ nullable: true })
-  // approvedBy: string; 
+  @Column({ nullable: true })
+  approvedBy: string; 
 }
