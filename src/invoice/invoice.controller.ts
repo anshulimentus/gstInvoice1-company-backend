@@ -141,8 +141,8 @@ export class InvoiceController {
   }
 
   @Get('buyer/wallet/:walletAddress/statistics')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.User)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.User)
   @ApiOperation({ summary: 'Get invoice statistics for a buyer by wallet address' })
   @ApiParam({ name: 'walletAddress', description: 'Wallet address of the buyer' })
   @ApiResponse({ status: 200, description: 'Invoice statistics for the buyer' })
