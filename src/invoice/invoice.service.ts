@@ -24,6 +24,7 @@ export class InvoiceService {
     constructor(
         @InjectRepository(Invoice)
         private invoiceRepository: Repository<Invoice>,
+        @InjectRepository(Customer)  // ✅ Add this decorator
         private customerRepository: Repository<Customer>,
     ) {
         // Validate environment variables
