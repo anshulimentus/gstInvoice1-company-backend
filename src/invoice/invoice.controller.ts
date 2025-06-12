@@ -103,8 +103,8 @@ export class InvoiceController {
   }
 
   @Patch('buyer/approve/:invoiceId/:walletAddress')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.User)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.User)
   @ApiOperation({ summary: 'Approve invoice by buyer' })
   @ApiParam({ name: 'invoiceId', description: 'Invoice UUID' })
   @ApiParam({name: 'walletAddress', description: 'Wallet address of the buyer' })
