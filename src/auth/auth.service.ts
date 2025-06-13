@@ -36,13 +36,20 @@ export class AuthService {
 
   async login(user: any) {
     this.logger.log(`Logging in user: ${user.email}`);
+
+    const company = await this.companyRepository.findOne({
+      where: { tenantId: user.tenantId },
+    });
+
+    const walletAddress = company?.legalRepresentative?.toLowerCase() || null;
     
     // Include tenant_id in the JWT payload
     const payload = { 
       email: user.email, 
       sub: user.id, 
       role: 'company', // Set role as company for company login
-      tenant_id: user.tenantId // Include tenant_id
+      tenant_id: user.tenantId, // Include tenant_id
+      walletAddress: walletAddress,
     };
     
     const token = this.jwtService.sign(payload);
@@ -56,7 +63,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         companyName: user.companyName,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        walletAddress: walletAddress,
       }
     };
   }
