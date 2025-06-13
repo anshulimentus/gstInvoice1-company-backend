@@ -102,28 +102,27 @@ export class InvoiceController {
     return await this.invoiceService.findPendingInvoicesByBuyerWallet(walletAddress);
   }
 
-  @Patch('buyer/approve/:invoiceId/:walletAddress')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.User)
+  @Patch('buyer/approve/:invoiceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Approve invoice by buyer' })
   @ApiParam({ name: 'invoiceId', description: 'Invoice UUID' })
-  @ApiParam({name: 'walletAddress', description: 'Wallet address of the buyer' })
+  // ❌ Removed walletAddress as Param — it's coming from JWT now
   @ApiResponse({ status: 200, description: 'Invoice approved successfully' })
   @ApiResponse({ status: 404, description: 'Invoice not found' })
   @ApiResponse({ status: 403, description: 'Not authorized to approve this invoice' })
   async approveInvoiceByBuyer(
     @Param('invoiceId', ParseUUIDPipe) invoiceId: string,
-    @Param('walletAddress') walletAddress: string,
     @Request() req: any
   ) {
-    // Get wallet address from JWT token or request body
-    // const buyerWalletAddress = req.user.walletAddress; // Assuming wallet address is in JWT
-    return await this.invoiceService.approveInvoiceByBuyer(invoiceId, walletAddress);
+    const buyerWalletAddress = req.user.walletAddress; // ✅ JWT extraction
+    return await this.invoiceService.approveInvoiceByBuyer(invoiceId, buyerWalletAddress);
   }
+  
 
-  @Patch('buyer/reject/:invoiceId/:walletAddress')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.User)
+  @Patch('buyer/reject/:invoiceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Reject invoice by buyer' })
   @ApiParam({ name: 'invoiceId', description: 'Invoice UUID' })
   @ApiParam({ name: 'walletAddress', description: 'Wallet address of the buyer' })
@@ -132,17 +131,16 @@ export class InvoiceController {
   @ApiResponse({ status: 403, description: 'Not authorized to reject this invoice' })
   async rejectInvoiceByBuyer(
     @Param('invoiceId', ParseUUIDPipe) invoiceId: string,
-    @Param('walletAddress') walletAddress: string,
     @Request() req: any
   ) {
     // Get wallet address from JWT token or request body
-    // const buyerWalletAddress = req.user.walletAddress; // Assuming wallet address is in JWT
-    return await this.invoiceService.rejectInvoiceByBuyer(invoiceId, walletAddress);
+    const buyerWalletAddress = req.user.walletAddress; // Assuming wallet address is in JWT
+    return await this.invoiceService.rejectInvoiceByBuyer(invoiceId, buyerWalletAddress);
   }
 
   @Get('buyer/wallet/:walletAddress/statistics')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.User)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
   @ApiOperation({ summary: 'Get invoice statistics for a buyer by wallet address' })
   @ApiParam({ name: 'walletAddress', description: 'Wallet address of the buyer' })
   @ApiResponse({ status: 200, description: 'Invoice statistics for the buyer' })
@@ -174,9 +172,6 @@ export class InvoiceController {
 
     res.end(pdfBuffer);
   }
-
-
-
 
 
 
