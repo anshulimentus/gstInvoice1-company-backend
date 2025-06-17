@@ -3135,11 +3135,23 @@ export class ITCService {
 
   // Helper method to check invoice approval status in database
   private async checkInvoiceApproval(invoiceNumber: string): Promise<boolean> {
-    const invoice = await this.invoiceRepository.findOne({ 
-      where: { invoiceNo: invoiceNumber },
-    //   order: { invoiceId: 'ASC'},
-      select: ['status'] 
-    });
+    // const invoice = await this.invoiceRepository.findOne({ 
+    //   where: { invoiceNo: invoiceNumber },
+    // //   order: { invoiceId: 'ASC'},
+    //   select: ['status'] 
+    // });
+
+    const invoice = await this.invoiceRepository
+  .createQueryBuilder('invoice')
+  .leftJoinAndSelect('invoice.seller', 'seller')
+  .leftJoinAndSelect('invoice.buyer', 'buyer')
+  .where('invoice.invoiceNo = :invoiceNo', { invoiceNumber })
+  .select([
+    'invoice.id', // actual DB column name
+    'invoice.status',
+  ])
+  .orderBy('invoice.id', 'ASC') // use "id", not "Invoice_id"
+  .getOne();
 
     if (!invoice) {
       throw new BadRequestException(`Invoice ${invoiceNumber} not found in database`);
