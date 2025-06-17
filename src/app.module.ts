@@ -14,7 +14,8 @@ import { ImageModule } from './image/image.module';
 import { StateModule } from './State/state.module';
 import { CompanyModule } from './company/company.module';
 import { InvoiceModule } from './invoice/invoice.module';
-import { ItcModule } from './itc/itc.module';
+// import { ItcModule } from './itc/itc.module';
+import { ITCModule } from './ITC/itc.module';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { ItcModule } from './itc/itc.module';
     StateModule,
     CompanyModule,
     InvoiceModule,
-    ItcModule
+    ITCModule
   ],
   controllers: [AppController],
   providers: [AppService],
