@@ -3145,7 +3145,7 @@ export class ITCService {
   .createQueryBuilder('invoice')
   .leftJoinAndSelect('invoice.seller', 'seller')
   .leftJoinAndSelect('invoice.buyer', 'buyer')
-  .where('invoice.invoiceNo = :invoiceNo', { invoiceNumber })
+  .where('invoice.invoiceNo = :invoiceNo', { invoiceNo: invoiceNumber })
   .select([
     'invoice.id', // actual DB column name
     'invoice.status',
