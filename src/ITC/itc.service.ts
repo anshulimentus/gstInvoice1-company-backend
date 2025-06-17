@@ -3226,6 +3226,7 @@ export class ITCService {
       if (userToken.role !== 'company') {
         throw new UnauthorizedException('Only companies can create ITC records');
       }
+      console.log("userRole:", userToken.role);
 
       const isApproved = await this.checkInvoiceApproval(createITCDto.invoiceNumber);
       console.log("🚀 ~ ITCService ~ createITCRecord ~ isApproved:", isApproved)
