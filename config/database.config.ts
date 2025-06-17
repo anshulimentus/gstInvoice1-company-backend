@@ -4,7 +4,7 @@ import { Company } from 'src/company/entities/company.entity';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { ImageEntity } from 'src/image/image.entity';
 import { Invoice } from 'src/invoice/entities/invoice.entity';
-import { Itc } from 'src/itc/entities/itc.entity';
+// import { Itc } from 'src/itc/entities/itc.entity';
 import { Product } from 'src/product/entities/product.entity';
 import { State } from 'src/State/entities/state.entity';
 import { User } from 'src/users/users.entity';
@@ -15,7 +15,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
     type: 'postgres',
     url: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
-    entities: [Product, Customer, User, ImageEntity, State, Company, Invoice, Itc],
+    entities: [Product, Customer, User, ImageEntity, State, Company, Invoice, /* Itc */],
     synchronize: false,
     logging: true,
     migrations: ["dist/migrations/*.js"],
