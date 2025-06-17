@@ -3253,7 +3253,8 @@ export class ITCService {
         userToken.tenant_id,
         userToken.walletAddress,
         ethers.utils.parseUnits(createITCDto.inputGST.toString(), 18),
-        ethers.utils.parseUnits(createITCDto.outputGST.toString(), 18)
+        ethers.utils.parseUnits(createITCDto.outputGST.toString(), 18),
+        createITCDto.isApproved ? true : false
       );
 
       const receipt = await tx.wait();
