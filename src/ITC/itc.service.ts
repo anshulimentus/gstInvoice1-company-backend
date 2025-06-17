@@ -3152,6 +3152,7 @@ export class ITCService {
   private async registerCompanyIfNeeded(companyId: string, walletAddress: string): Promise<void> {
     try {
       const existingCompany = await this.contract.getCompanyByWallet(walletAddress);
+      console.log("🚀 ~ ITCService ~ registerCompanyIfNeeded ~ existingCompany:", existingCompany)
       if (!existingCompany) {
         const tx = await this.contract.registerCompany(companyId, walletAddress);
         await tx.wait();
@@ -3227,6 +3228,7 @@ export class ITCService {
       }
 
       const isApproved = await this.checkInvoiceApproval(createITCDto.invoiceNumber);
+      console.log("🚀 ~ ITCService ~ createITCRecord ~ isApproved:", isApproved)
       if (!isApproved) {
         throw new BadRequestException('Cannot create ITC record for unapproved invoice');
       }

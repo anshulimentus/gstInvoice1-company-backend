@@ -38,6 +38,7 @@ import {
     @ApiOperation({ summary: 'Create ITC record manually' })
     @ApiResponse({ status: 201, description: 'ITC record created successfully' })
     async createITCRecord(@Body() createITCDto: CreateITCRecordDto, @Request() req) {
+      console.log('Creating ITC record:', createITCDto);
       return this.itcService.createITCRecord(createITCDto, req.user);
     }
   
