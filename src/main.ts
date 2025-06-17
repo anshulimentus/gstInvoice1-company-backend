@@ -44,7 +44,7 @@ async function bootstrap() {
    const uploadPath = join(__dirname, '..', 'uploads');
   //  console.log(`📁 Serving static files from: ${uploadPath}`);
 
-  const port = process.env.PORT || 3001;
+  const port = 3001;
   await app.listen(port);
   console.log(`✅ App listening on port ${port}`);
   
