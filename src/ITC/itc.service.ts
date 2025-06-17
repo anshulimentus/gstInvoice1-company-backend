@@ -3246,7 +3246,7 @@ export class ITCService {
         throw new BadRequestException('Cannot create ITC record for unapproved invoice');
       }
 
-      await this.registerCompanyIfNeeded(userToken.tenant_id, userToken.walletAddress);
+    //   await this.registerCompanyIfNeeded(userToken.tenant_id, userToken.walletAddress);
 
       const tx = await this.contract.createITCRecord(
         createITCDto.invoiceNumber,
