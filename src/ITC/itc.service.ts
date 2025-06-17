@@ -3137,6 +3137,7 @@ export class ITCService {
   private async checkInvoiceApproval(invoiceNumber: string): Promise<boolean> {
     const invoice = await this.invoiceRepository.findOne({ 
       where: { invoiceNo: invoiceNumber },
+      order: { invoiceNo: 'ASC'},
       select: ['status'] 
     });
 
