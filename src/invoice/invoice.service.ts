@@ -54,6 +54,25 @@ export class InvoiceService {
                     {
                         "indexed": false,
                         "internalType": "string",
+                        "name": "companyId",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "walletAddress",
+                        "type": "address"
+                    }
+                ],
+                "name": "CompanyRegistered",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "string",
                         "name": "id",
                         "type": "string"
                     },
@@ -109,6 +128,118 @@ export class InvoiceService {
                     }
                 ],
                 "name": "CustomerUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "string",
+                        "name": "companyId",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "claimableAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ITCApproved",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "string",
+                        "name": "companyId",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "claimedBy",
+                        "type": "address"
+                    }
+                ],
+                "name": "ITCClaimed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "string",
+                        "name": "companyId",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "inputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "outputGST",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ITCRecordCreated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "string",
+                        "name": "companyId",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "reason",
+                        "type": "string"
+                    }
+                ],
+                "name": "ITCRejected",
                 "type": "event"
             },
             {
@@ -262,6 +393,170 @@ export class InvoiceService {
             {
                 "inputs": [
                     {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "allCompanies",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    }
+                ],
+                "name": "approveITC",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string[]",
+                        "name": "_invoiceNumbers",
+                        "type": "string[]"
+                    }
+                ],
+                "name": "bulkClaimITC",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    }
+                ],
+                "name": "claimITC",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "companyInvoices",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "name": "companySummary",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "totalInputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalOutputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalClaimableITC",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalClaimedITC",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "pendingITC",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "recordCount",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_companyId",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_companyWallet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_inputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_outputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "_isApproved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "createITCRecord",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
                         "internalType": "string",
                         "name": "_invoiceNumber",
                         "type": "string"
@@ -407,6 +702,19 @@ export class InvoiceService {
             },
             {
                 "inputs": [],
+                "name": "getAllCompanies",
+                "outputs": [
+                    {
+                        "internalType": "string[]",
+                        "name": "",
+                        "type": "string[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
                 "name": "getAllInvoices",
                 "outputs": [
                     {
@@ -492,6 +800,195 @@ export class InvoiceService {
                         "internalType": "struct Company.Invoice[]",
                         "name": "",
                         "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_companyId",
+                        "type": "string"
+                    }
+                ],
+                "name": "getClaimableITCs",
+                "outputs": [
+                    {
+                        "internalType": "string[]",
+                        "name": "",
+                        "type": "string[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "getCompanyByWallet",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_companyId",
+                        "type": "string"
+                    }
+                ],
+                "name": "getCompanyInvoices",
+                "outputs": [
+                    {
+                        "internalType": "string[]",
+                        "name": "",
+                        "type": "string[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_companyId",
+                        "type": "string"
+                    }
+                ],
+                "name": "getCompanySummary",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "uint256",
+                                "name": "totalInputGST",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalOutputGST",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalClaimableITC",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "totalClaimedITC",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "pendingITC",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "recordCount",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct Company.ITCSummary",
+                        "name": "",
+                        "type": "tuple"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    }
+                ],
+                "name": "getITCRecord",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "string",
+                                "name": "invoiceNumber",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "companyId",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "companyWallet",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "inputGST",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "outputGST",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "netITC",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "claimableAmount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "claimedAmount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "timestamp",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isApproved",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isClaimed",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "status",
+                                "type": "string"
+                            }
+                        ],
+                        "internalType": "struct Company.ITCRecord",
+                        "name": "",
+                        "type": "tuple"
                     }
                 ],
                 "stateMutability": "view",
@@ -589,6 +1086,99 @@ export class InvoiceService {
                 "type": "function"
             },
             {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_companyId",
+                        "type": "string"
+                    }
+                ],
+                "name": "getTotalClaimableAmount",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "name": "itcRecords",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "companyId",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "companyWallet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "inputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "outputGST",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "netITC",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "claimableAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "claimedAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isApproved",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isClaimed",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "status",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
                 "inputs": [],
                 "name": "nextCustomerId",
                 "outputs": [
@@ -624,6 +1214,55 @@ export class InvoiceService {
                     {
                         "internalType": "uint256",
                         "name": "price",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_companyId",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_walletAddress",
+                        "type": "address"
+                    }
+                ],
+                "name": "registerCompany",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_reason",
+                        "type": "string"
+                    }
+                ],
+                "name": "rejectITC",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalITCClaims",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
                         "type": "uint256"
                     }
                 ],
@@ -778,6 +1417,43 @@ export class InvoiceService {
                 "name": "updateProduct",
                 "outputs": [],
                 "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_invoiceNumber",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_status",
+                        "type": "string"
+                    }
+                ],
+                "name": "updateRecordStatus",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "walletToCompany",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             }
         ], this.contractAddress);
