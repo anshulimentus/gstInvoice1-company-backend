@@ -1,0 +1,583 @@
+
+What can I help you with today?
+
+these are the data
+
+import { Controller, Get, Post, Req, UseGuards, Query, Param } from '@nestjs/common';
+import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ItcService } from './itc.service';
+
+@Controller('itc')
+export class ItcController {
+  constructor(private readonly itcService: ItcService) {}
+
+  /**
+   * POST /itc/claim - Process ITC claim for the company
+   */
+  @Post('claim')
+  @UseGuards(JwtAuthGuard)
+  async claimItc(@Req() req: Request) {
+    try {
+      const user = req.user;
+      const result = await this.itcService.claimForCompany(user);
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * GET /itc/summary - Get basic ITC summary (backward compatibility)
+   */
+  @Get('summary')
+  @UseGuards(JwtAuthGuard)
+  async getItcSummary(@Req() req: Request) {
+    try {
+      const user = req.user;
+      const result = await this.itcService.getSummaryForCompany(user);
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        data: {
+          companyId: (req.user as any)?.tenant_id || '',
+          inputGST: 0,
+          outputGST: 0,
+          totalClaimable: 0,
+          netITC: 0,
+          claimCount: 0,
+          claims: []
+        }
+      };
+    }
+  }
+
+  /**
+   * GET /itc/analysis - Get detailed ITC analysis with breakdowns
+   */
+  @Get('analysis')
+  @UseGuards(JwtAuthGuard)
+  async getDetailedAnalysis(@Req() req: Request) {
+    try {
+      const user = req.user;
+      const result = await this.itcService.getDetailedItcAnalysis(user);
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * GET /itc/claims - Get all claims with details
+   */
+  @Get('claims')
+  @UseGuards(JwtAuthGuard)
+  async getAllClaims(@Req() req: Request) {
+    try {
+      const user = req.user;
+      const result = await this.itcService.getAllClaimsWithDetails(user);
+      if (!result || result.length === 0) {
+        return {
+          success: false,
+          message: 'No ITC claims found for this company.',
+          data: []
+        };
+      }
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        data: []
+      };
+    }
+  }
+
+  /**
+   * GET /itc/monthly/:year - Get monthly ITC breakdown for a specific year
+   */
+  @Get('monthly/:year')
+  @UseGuards(JwtAuthGuard)
+  async getMonthlyBreakdown(@Req() req: Request, @Param('year') year: string) {
+    try {
+      const user = req.user;
+      const yearNum = parseInt(year) || new Date().getFullYear();
+      const result = await this.itcService.getMonthlyItcBreakdown(user, yearNum);
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * GET /itc/monthly - Get monthly ITC breakdown for current year
+   */
+  @Get('monthly')
+  @UseGuards(JwtAuthGuard)
+  async getCurrentYearMonthlyBreakdown(@Req() req: Request) {
+    try {
+      const user = req.user;
+      const currentYear = new Date().getFullYear();
+      const result = await this.itcService.getMonthlyItcBreakdown(user, currentYear);
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        error: error.message
+      };
+    }
+  }
+}
+
+
+these are the invoice route and business logic and the data of the invoices i want the output of the all the invoices how it will take the data so give me the output
+
+
+[ { "invoiceId": "6f629c4d-4a0e-4599-a91f-b786406bfd6b", "invoiceNo": "INV-20250612-6418", "invoiceDate": "2025-02-12", "supplyType": "services", "seller": { "id": 9, "companyName": "Global Exports Ltd", "gstNumber": "19
+
+pasted
+
+
+
+import { Injectable } from '@nestjs/common'; import { InjectRepository } from '@nestjs/typeorm'; import { Invoice } from 'src/invoice/entities/invoice.entity'; import { Repository } from 'typeorm'; import { ItcClaim } from './entities/itc-claim.entity'; import Web3 from 'web3'; import { AbiItem } fr
+
+pasted
+
+
+
+
+paste-2.txt
+
+35.32 KB •1,255 lines
+•
+Formatting may be inconsistent from source
+
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Invoice } from 'src/invoice/entities/invoice.entity';
+import { Repository } from 'typeorm';
+import { ItcClaim } from './entities/itc-claim.entity';
+import Web3 from 'web3';
+import { AbiItem } from 'web3-utils';
+import { BuyerInfoDto } from 'src/invoice/dto/buyer-invoice-response.dto';
+
+@Injectable()
+export class ItcService {
+  private web3: Web3;
+  private contract: any;
+
+  constructor(
+    @InjectRepository(Invoice) private invoiceRepo: Repository<Invoice>,
+    @InjectRepository(ItcClaim) private itcClaimRepo: Repository<ItcClaim>,
+  ) {
+    this.web3 = new Web3(process.env.RPC_URL);
+    this.contract = new this.web3.eth.Contract(
+      [
+      ],
+      process.env.INVOICE_CONTRACT_ADDRESS,
+    );
+  }
+
+  /**
+   * Get detailed ITC analysis for a company
+   */
+  async getDetailedItcAnalysis(user: any) {
+    const { tenant_id } = user;
+
+    try {
+      // Get input invoices (where company is buyer - GST paid)
+      const inputInvoices = await this.invoiceRepo.find({
+        where: {
+          buyer: { id: tenant_id },
+          status: 'approved',
+        },
+        relations: ['buyer', 'seller'],
+        order: { invoiceDate: 'DESC' }
+      });
+
+      // Get output invoices (where company is seller - GST collected)
+      const outputInvoices = await this.invoiceRepo.find({
+        where: {
+          seller: { tenantId: tenant_id },
+          status: 'approved',
+        },
+        relations: ['buyer', 'seller'],
+        order: { invoiceDate: 'DESC' }
+      });
+
+      // Calculate totals
+      const totalInputGST = inputInvoices.reduce((sum, inv) => 
+        sum + inv.totalGstAmount || 0, 0
+      );
+      
+      const totalOutputGST = outputInvoices.reduce((sum, inv) => 
+        sum + inv.totalGstAmount, 0
+      );
+
+      // ITC Logic:
+      // 1. Input GST is what you paid (can be claimed)
+      // 2. Output GST is what you collected (must be paid to government)
+      // 3. Net ITC = Input GST - Already Claimed ITC
+      // 4. Claimable = Min(Available Input GST, Current Month's Output GST liability)
+
+      const existingClaims = await this.itcClaimRepo.find({
+        where: { companyId: tenant_id }
+      });
+
+      const totalClaimedAmount = existingClaims.reduce((sum, claim) => 
+        sum + claim.claimableAmount|| 0, 0
+      );
+
+      const availableInputGST = totalInputGST - totalClaimedAmount;
+      const claimableAmount = Math.min(availableInputGST, totalOutputGST);
+      const netITC = Math.max(0, totalInputGST - totalOutputGST);
+
+      return {
+        companyId: tenant_id,
+        inputInvoices: {
+          count: inputInvoices.length,
+          totalAmount: inputInvoices.reduce((sum, inv) => sum + inv.totalTaxableValue || 0, 0),
+          totalGST: totalInputGST,
+          invoices: inputInvoices.map(inv => ({
+            invoiceNumber: inv.invoiceNo,
+            date: inv.invoiceDate,
+            sellerName: inv.seller?.companyName || 'Unknown',
+            amount: inv.totalTaxableValue || 0,
+            gstAmount: inv.totalGstAmount || 0,
+            status: inv.status
+          }))
+        },
+        outputInvoices: {
+          count: outputInvoices.length,
+          totalAmount: outputInvoices.reduce((sum, inv) => sum + (inv.totalTaxableValue || 0), 0),
+          totalGST: totalOutputGST,
+          invoices: outputInvoices.map(inv => ({
+            invoiceNumber: inv.invoiceNo,
+            date: inv.invoiceDate,
+            buyerName: inv.buyer?.name || 'Unknown',
+            amount: inv.totalGstAmount || 0,
+            gstAmount: inv.totalGstAmount || 0,
+            status: inv.status
+          }))
+        },
+        itcSummary: {
+          totalInputGST,
+          totalOutputGST,
+          totalClaimedAmount,
+          availableInputGST,
+          claimableAmount: Math.max(0, claimableAmount),
+          netITC,
+          claimCount: existingClaims.length,
+          canClaim: claimableAmount > 0
+        },
+        existingClaims: existingClaims.map(claim => ({
+          id: claim.id,
+          invoiceId: claim.invoiceId,
+          inputGST: claim.inputGst,
+          outputGST: claim.outputGst,
+          claimableAmount: claim.claimableAmount,
+          transactionHash: claim.transactionHash,
+          claimedAt: claim.claimedAt,
+          status: 'approved' // You can add status field to entity if needed
+        }))
+      };
+
+    } catch (error) {
+      console.error('Error in getDetailedItcAnalysis:', error);
+      throw new Error('Failed to fetch ITC analysis');
+    }
+  }
+
+  /**
+   * Enhanced claim method with better validation
+   */
+  async claimForCompany(user: any) {
+    const { tenant_id, walletAddress } = user;
+
+    if (!walletAddress) {
+      throw new Error('Wallet address is required for ITC claims');
+    }
+
+    try {
+      // Get current ITC analysis
+      const analysis = await this.getDetailedItcAnalysis(user);
+      
+      if (analysis.itcSummary.claimableAmount <= 0) {
+        throw new Error('No claimable ITC amount available');
+      }
+
+      // Get eligible input invoices that haven't been claimed yet
+      const claimedInvoiceIds = analysis.existingClaims.map(claim => claim.invoiceId);
+      const eligibleInputInvoices = await this.invoiceRepo.find({
+        where: {
+          buyer: { id: tenant_id },
+          status: 'approved',
+        },
+        relations: ['buyer'],
+      });
+
+      const unclaimedInvoices = eligibleInputInvoices.filter(
+        inv => !claimedInvoiceIds.includes(inv.invoiceId)
+      );
+
+      if (unclaimedInvoices.length === 0) {
+        throw new Error('No unclaimed invoices available');
+      }
+
+      const claims: ItcClaim[] = [];
+      let remainingClaimable = analysis.itcSummary.claimableAmount;
+
+      for (const invoice of unclaimedInvoices) {
+        if (remainingClaimable <= 0) break;
+
+        const inputGST = invoice.totalGstAmount || 0;
+        const claimAmountForThisInvoice = Math.min(inputGST, remainingClaimable);
+
+        if (claimAmountForThisInvoice <= 0) continue;
+
+        try {
+          // Convert amounts to Wei for blockchain (multiply by 10^18)
+          const inputGSTWei = Math.floor(inputGST * 1e18);
+          const outputGSTWei = Math.floor(analysis.itcSummary.totalOutputGST * 1e18);
+
+          const tx = await this.contract.methods
+            .claimITC(invoice.invoiceNo, tenant_id, inputGSTWei, outputGSTWei)
+            .send({ from: walletAddress, gas: 500000 });
+
+          const savedClaim = this.itcClaimRepo.create({
+            invoiceId: invoice.invoiceId,
+            companyId: tenant_id,
+            companyWallet: walletAddress,
+            inputGst: inputGST,
+            outputGst: analysis.itcSummary.totalOutputGST,
+            claimableAmount: claimAmountForThisInvoice,
+            transactionHash: tx.transactionHash,
+            claimedAt: new Date(),
+          });
+
+          await this.itcClaimRepo.save(savedClaim);
+          claims.push(savedClaim);
+          remainingClaimable -= claimAmountForThisInvoice;
+
+        } catch (blockchainError) {
+          console.error(`Blockchain error for invoice ${invoice.invoiceNo}:`, blockchainError);
+          
+          // Save claim with pending status even if blockchain fails
+          const savedClaim = this.itcClaimRepo.create({
+            invoiceId: invoice.invoiceId,
+            companyId: tenant_id,
+            companyWallet: walletAddress,
+            inputGst: inputGST,
+            outputGst: analysis.itcSummary.totalOutputGST,
+            claimableAmount: claimAmountForThisInvoice,
+            transactionHash: 'pending',
+            claimedAt: new Date(),
+          });
+
+          await this.itcClaimRepo.save(savedClaim);
+          claims.push(savedClaim);
+          remainingClaimable -= claimAmountForThisInvoice;
+        }
+      }
+
+      const totalClaimed = claims.reduce((sum, claim) => 
+        sum + claim.claimableAmount, 0
+      );
+
+      return {
+        success: true,
+        message: `ITC claims processed successfully. Total claimed: ₹${totalClaimed.toFixed(2)}`,
+        totalClaimed,
+        claimsProcessed: claims.length,
+        claims: claims.map(claim => ({
+          invoiceId: claim.invoiceId,
+          claimableAmount: claim.claimableAmount,
+          transactionHash: claim.transactionHash,
+          status: claim.transactionHash === 'pending' ? 'pending' : 'approved'
+        })),
+        remainingClaimable: Math.max(0, remainingClaimable)
+      };
+
+    } catch (error) {
+      console.error('Error in claimForCompany:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get summary for company (backward compatibility)
+   */
+  async getSummaryForCompany(user: any) {
+    try {
+      const analysis = await this.getDetailedItcAnalysis(user);
+      return {
+        companyId: analysis.companyId,
+        inputGST: analysis.itcSummary.totalInputGST,
+        outputGST: analysis.itcSummary.totalOutputGST,
+        totalClaimable: analysis.itcSummary.claimableAmount,
+        netITC: analysis.itcSummary.netITC,
+        claimCount: analysis.itcSummary.claimCount,
+        claims: analysis.existingClaims
+      };
+    } catch (error) {
+      console.error('Error in getSummaryForCompany:', error);
+      return {
+        companyId: user.tenant_id,
+        inputGST: 0,
+        outputGST: 0,
+        totalClaimable: 0,
+        netITC: 0,
+        claimCount: 0,
+        claims: []
+      };
+    }
+  }
+
+  /**
+   * Get month-wise ITC breakdown
+   */
+  async getMonthlyItcBreakdown(user: any, year: number = new Date().getFullYear()) {
+    const { tenant_id } = user;
+
+    try {
+      const inputInvoices = await this.invoiceRepo.find({
+        where: {
+          buyer: { id: tenant_id },
+          status: 'approved',
+        },
+        relations: ['buyer'],
+      });
+
+      const outputInvoices = await this.invoiceRepo.find({
+        where: {
+          seller: { tenantId: tenant_id },
+          status: 'approved',
+        },
+        relations: ['seller'],
+      });
+
+      const monthlyData = {};
+
+      // Initialize months
+      for (let month = 0; month < 12; month++) {
+        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+        monthlyData[monthKey] = {
+          month: new Date(year, month).toLocaleString('default', { month: 'long' }),
+          inputGST: 0,
+          outputGST: 0,
+          netITC: 0,
+          inputInvoiceCount: 0,
+          outputInvoiceCount: 0
+        };
+      }
+
+      // Process input invoices
+      inputInvoices.forEach(inv => {
+        const date = new Date(inv.invoiceDate);
+        if (date.getFullYear() === year) {
+          const monthKey = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const gstAmount = inv.totalGstAmount || 0;
+          monthlyData[monthKey].inputGST += gstAmount;
+          monthlyData[monthKey].inputInvoiceCount += 1;
+        }
+      });
+
+      // Process output invoices
+      outputInvoices.forEach(inv => {
+        const date = new Date(inv.invoiceDate);
+        if (date.getFullYear() === year) {
+          const monthKey = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const gstAmount = inv.totalGstAmount || 0;
+          monthlyData[monthKey].outputGST += gstAmount;
+          monthlyData[monthKey].outputInvoiceCount += 1;
+        }
+      });
+
+      // Calculate net ITC for each month
+      Object.keys(monthlyData).forEach(monthKey => {
+        const data = monthlyData[monthKey];
+        data.netITC = Math.max(0, data.inputGST - data.outputGST);
+      });
+
+      return {
+        year,
+        monthlyBreakdown: Object.values(monthlyData),
+        yearlyTotals: {
+          inputGST: Object.values(monthlyData).reduce((sum: number, data: any) => sum + data.inputGST, 0),
+          outputGST: Object.values(monthlyData).reduce((sum: number, data: any) => sum + data.outputGST, 0),
+          netITC: Object.values(monthlyData).reduce((sum: number, data: any) => sum + data.netITC, 0),
+          totalInputInvoices: Object.values(monthlyData).reduce((sum: number, data: any) => sum + data.inputInvoiceCount, 0),
+          totalOutputInvoices: Object.values(monthlyData).reduce((sum: number, data: any) => sum + data.outputInvoiceCount, 0)
+        }
+      };
+
+    } catch (error) {
+      console.error('Error in getMonthlyItcBreakdown:', error);
+      throw new Error('Failed to fetch monthly ITC breakdown');
+    }
+  }
+
+  /**
+   * Get all claims with invoice details
+   */
+  async getAllClaimsWithDetails(user: any) {
+    const { tenant_id } = user;
+
+    try {
+      const claims = await this.itcClaimRepo.find({
+        where: { companyId: tenant_id },
+        relations: ['invoice'],
+        order: { claimedAt: 'DESC' }
+      });
+
+      return claims.map(claim => ({
+        id: claim.id,
+        invoiceNumber: claim.invoice?.invoiceNo || 'N/A',
+        invoiceDate: claim.invoice?.invoiceDate || null,
+        inputGST: claim.inputGst,
+        outputGST: claim.outputGst,
+        claimableAmount: claim.claimableAmount,
+        transactionHash: claim.transactionHash,
+        claimedAt: claim.claimedAt,
+        status: claim.transactionHash === 'pending' ? 'pending' : 'approved'
+      }));
+
+    } catch (error) {
+      console.error('Error in getAllClaimsWithDetails:', error);
+      throw new Error('Failed to fetch claims with details');
+    }
+  }
+}

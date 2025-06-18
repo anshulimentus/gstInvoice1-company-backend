@@ -884,16 +884,21 @@ export class ItcService {
   }
 
   /**
-   * Get detailed ITC analysis for a company
+   * Get detailed ITC analysis for a company based on wallet address
    */
   async getDetailedItcAnalysis(user: any) {
-    const { tenant_id } = user;
+    const { walletAddress } = user;
+
+    if (!walletAddress) {
+      throw new Error('Wallet address is required for ITC analysis');
+    }
 
     try {
       // Get input invoices (where company is buyer - GST paid)
+      // Match using buyer.wallet_address
       const inputInvoices = await this.invoiceRepo.find({
         where: {
-          buyer: { id: tenant_id },
+          buyer: { wallet_address: walletAddress },
           status: 'approved',
         },
         relations: ['buyer', 'seller'],
@@ -901,9 +906,10 @@ export class ItcService {
       });
 
       // Get output invoices (where company is seller - GST collected)
+      // Match using seller.legalRepresentative (which is the wallet address)
       const outputInvoices = await this.invoiceRepo.find({
         where: {
-          seller: { tenantId: tenant_id },
+          seller: { legalRepresentative: walletAddress },
           status: 'approved',
         },
         relations: ['buyer', 'seller'],
@@ -912,11 +918,11 @@ export class ItcService {
 
       // Calculate totals
       const totalInputGST = inputInvoices.reduce((sum, inv) => 
-        sum + inv.totalGstAmount || 0, 0
+        sum + (parseFloat(inv.totalGstAmount.toString()) || 0), 0
       );
       
       const totalOutputGST = outputInvoices.reduce((sum, inv) => 
-        sum + inv.totalGstAmount, 0
+        sum + (parseFloat(inv.totalGstAmount.toString()) || 0), 0
       );
 
       // ITC Logic:
@@ -926,11 +932,11 @@ export class ItcService {
       // 4. Claimable = Min(Available Input GST, Current Month's Output GST liability)
 
       const existingClaims = await this.itcClaimRepo.find({
-        where: { companyId: tenant_id }
+        where: { companyWallet: walletAddress }
       });
 
       const totalClaimedAmount = existingClaims.reduce((sum, claim) => 
-        sum + claim.claimableAmount|| 0, 0
+        sum + (claim.claimableAmount || 0), 0
       );
 
       const availableInputGST = totalInputGST - totalClaimedAmount;
@@ -938,30 +944,34 @@ export class ItcService {
       const netITC = Math.max(0, totalInputGST - totalOutputGST);
 
       return {
-        companyId: tenant_id,
+        walletAddress: walletAddress,
         inputInvoices: {
           count: inputInvoices.length,
-          totalAmount: inputInvoices.reduce((sum, inv) => sum + inv.totalTaxableValue || 0, 0),
+          totalAmount: inputInvoices.reduce((sum, inv) => 
+            sum + (parseFloat(inv.totalTaxableValue.toString()) || 0), 0
+          ),
           totalGST: totalInputGST,
           invoices: inputInvoices.map(inv => ({
             invoiceNumber: inv.invoiceNo,
             date: inv.invoiceDate,
             sellerName: inv.seller?.companyName || 'Unknown',
-            amount: inv.totalTaxableValue || 0,
-            gstAmount: inv.totalGstAmount || 0,
+            amount: parseFloat(inv.totalTaxableValue.toString()) || 0,
+            gstAmount: parseFloat(inv.totalGstAmount.toString()) || 0,
             status: inv.status
           }))
         },
         outputInvoices: {
           count: outputInvoices.length,
-          totalAmount: outputInvoices.reduce((sum, inv) => sum + (inv.totalTaxableValue || 0), 0),
+          totalAmount: outputInvoices.reduce((sum, inv) => 
+            sum + (parseFloat(inv.totalTaxableValue.toString()) || 0), 0
+          ),
           totalGST: totalOutputGST,
           invoices: outputInvoices.map(inv => ({
             invoiceNumber: inv.invoiceNo,
             date: inv.invoiceDate,
             buyerName: inv.buyer?.name || 'Unknown',
-            amount: inv.totalGstAmount || 0,
-            gstAmount: inv.totalGstAmount || 0,
+            amount: parseFloat(inv.totalTaxableValue.toString()) || 0,
+            gstAmount: parseFloat(inv.totalGstAmount.toString()) || 0,
             status: inv.status
           }))
         },
@@ -983,7 +993,7 @@ export class ItcService {
           claimableAmount: claim.claimableAmount,
           transactionHash: claim.transactionHash,
           claimedAt: claim.claimedAt,
-          status: 'approved' // You can add status field to entity if needed
+          status: claim.transactionHash === 'pending' ? 'pending' : 'approved'
         }))
       };
 
@@ -994,10 +1004,10 @@ export class ItcService {
   }
 
   /**
-   * Enhanced claim method with better validation
+   * Enhanced claim method with wallet address validation
    */
   async claimForCompany(user: any) {
-    const { tenant_id, walletAddress } = user;
+    const { walletAddress } = user;
 
     if (!walletAddress) {
       throw new Error('Wallet address is required for ITC claims');
@@ -1015,7 +1025,7 @@ export class ItcService {
       const claimedInvoiceIds = analysis.existingClaims.map(claim => claim.invoiceId);
       const eligibleInputInvoices = await this.invoiceRepo.find({
         where: {
-          buyer: { id: tenant_id },
+          buyer: { wallet_address: walletAddress },
           status: 'approved',
         },
         relations: ['buyer'],
@@ -1035,7 +1045,7 @@ export class ItcService {
       for (const invoice of unclaimedInvoices) {
         if (remainingClaimable <= 0) break;
 
-        const inputGST = invoice.totalGstAmount || 0;
+        const inputGST = parseFloat(invoice.totalGstAmount.toString()) || 0;
         const claimAmountForThisInvoice = Math.min(inputGST, remainingClaimable);
 
         if (claimAmountForThisInvoice <= 0) continue;
@@ -1046,12 +1056,12 @@ export class ItcService {
           const outputGSTWei = Math.floor(analysis.itcSummary.totalOutputGST * 1e18);
 
           const tx = await this.contract.methods
-            .claimITC(invoice.invoiceNo, tenant_id, inputGSTWei, outputGSTWei)
+            .claimITC(invoice.invoiceNo, walletAddress, inputGSTWei, outputGSTWei)
             .send({ from: walletAddress, gas: 500000 });
 
           const savedClaim = this.itcClaimRepo.create({
             invoiceId: invoice.invoiceId,
-            companyId: tenant_id,
+            companyId: user.tenant_id, // Keep this for backward compatibility
             companyWallet: walletAddress,
             inputGst: inputGST,
             outputGst: analysis.itcSummary.totalOutputGST,
@@ -1070,7 +1080,7 @@ export class ItcService {
           // Save claim with pending status even if blockchain fails
           const savedClaim = this.itcClaimRepo.create({
             invoiceId: invoice.invoiceId,
-            companyId: tenant_id,
+            companyId: user.tenant_id, // Keep this for backward compatibility
             companyWallet: walletAddress,
             inputGst: inputGST,
             outputGst: analysis.itcSummary.totalOutputGST,
@@ -1116,7 +1126,8 @@ export class ItcService {
     try {
       const analysis = await this.getDetailedItcAnalysis(user);
       return {
-        companyId: analysis.companyId,
+        companyId: user.tenant_id, // Keep for backward compatibility
+        walletAddress: analysis.walletAddress,
         inputGST: analysis.itcSummary.totalInputGST,
         outputGST: analysis.itcSummary.totalOutputGST,
         totalClaimable: analysis.itcSummary.claimableAmount,
@@ -1128,6 +1139,7 @@ export class ItcService {
       console.error('Error in getSummaryForCompany:', error);
       return {
         companyId: user.tenant_id,
+        walletAddress: user.walletAddress,
         inputGST: 0,
         outputGST: 0,
         totalClaimable: 0,
@@ -1139,15 +1151,19 @@ export class ItcService {
   }
 
   /**
-   * Get month-wise ITC breakdown
+   * Get month-wise ITC breakdown based on wallet address
    */
   async getMonthlyItcBreakdown(user: any, year: number = new Date().getFullYear()) {
-    const { tenant_id } = user;
+    const { walletAddress } = user;
+
+    if (!walletAddress) {
+      throw new Error('Wallet address is required for monthly breakdown');
+    }
 
     try {
       const inputInvoices = await this.invoiceRepo.find({
         where: {
-          buyer: { id: tenant_id },
+          buyer: { wallet_address: walletAddress },
           status: 'approved',
         },
         relations: ['buyer'],
@@ -1155,7 +1171,7 @@ export class ItcService {
 
       const outputInvoices = await this.invoiceRepo.find({
         where: {
-          seller: { tenantId: tenant_id },
+          seller: { legalRepresentative: walletAddress },
           status: 'approved',
         },
         relations: ['seller'],
@@ -1181,7 +1197,7 @@ export class ItcService {
         const date = new Date(inv.invoiceDate);
         if (date.getFullYear() === year) {
           const monthKey = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          const gstAmount = inv.totalGstAmount || 0;
+          const gstAmount = parseFloat(inv.totalGstAmount.toString()) || 0;
           monthlyData[monthKey].inputGST += gstAmount;
           monthlyData[monthKey].inputInvoiceCount += 1;
         }
@@ -1192,7 +1208,7 @@ export class ItcService {
         const date = new Date(inv.invoiceDate);
         if (date.getFullYear() === year) {
           const monthKey = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          const gstAmount = inv.totalGstAmount || 0;
+          const gstAmount = parseFloat(inv.totalGstAmount.toString()) || 0;
           monthlyData[monthKey].outputGST += gstAmount;
           monthlyData[monthKey].outputInvoiceCount += 1;
         }
@@ -1206,6 +1222,7 @@ export class ItcService {
 
       return {
         year,
+        walletAddress,
         monthlyBreakdown: Object.values(monthlyData),
         yearlyTotals: {
           inputGST: Object.values(monthlyData).reduce((sum: number, data: any) => sum + data.inputGST, 0),
@@ -1223,14 +1240,18 @@ export class ItcService {
   }
 
   /**
-   * Get all claims with invoice details
+   * Get all claims with invoice details based on wallet address
    */
   async getAllClaimsWithDetails(user: any) {
-    const { tenant_id } = user;
+    const { walletAddress } = user;
+
+    if (!walletAddress) {
+      throw new Error('Wallet address is required to fetch claims');
+    }
 
     try {
       const claims = await this.itcClaimRepo.find({
-        where: { companyId: tenant_id },
+        where: { companyWallet: walletAddress },
         relations: ['invoice'],
         order: { claimedAt: 'DESC' }
       });
