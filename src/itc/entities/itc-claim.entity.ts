@@ -5,27 +5,27 @@ export class ItcClaim {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({name: 'invoice_id'})
   invoiceId: string;
 
-  @Column()
+  @Column({ name: 'company_id' })
   companyId: string;
 
-  @Column()
+  @Column({ name: 'company_wallet' })
   companyWallet: string;
 
-  @Column('numeric', { precision: 12, scale: 2 })
+  @Column('numeric', { precision: 12, scale: 2, name: 'input_gst' })
   inputGst: number;
 
-  @Column('numeric', { precision: 12, scale: 2 })
+  @Column('numeric', { precision: 12, scale: 2,  name: 'output_gst' })
   outputGst: number;
 
-  @Column('numeric', { precision: 12, scale: 2 })
+  @Column('numeric', { precision: 12, scale: 2, name: 'claimable_amount' })
   claimableAmount: number;
 
-  @Column()
+  @Column({ name: 'transaction_hash' })
   transactionHash: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'claimed_at', type: 'timestamp with time zone' })
   claimedAt: Date;
 }
