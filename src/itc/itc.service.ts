@@ -19,7 +19,69 @@ export class ItcService {
     this.web3 = new Web3(process.env.RPC_URL);
     this.contract = new this.web3.eth.Contract(
       [
-        // Your existing ABI here - keeping it as is
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "gstNumber",
+              "type": "string"
+            }
+          ],
+          "name": "CustomerAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "name": "CustomerDeleted",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "gstNumber",
+              "type": "string"
+            }
+          ],
+          "name": "CustomerUpdated",
+          "type": "event"
+        },
         {
           "anonymous": false,
           "inputs": [
@@ -44,6 +106,154 @@ export class ItcService {
           ],
           "name": "ITCClaimed",
           "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "invoiceNumber",
+              "type": "string"
+            }
+          ],
+          "name": "InvoiceCreated",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "invoiceNumber",
+              "type": "string"
+            }
+          ],
+          "name": "InvoiceDeleted",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "invoiceNumber",
+              "type": "string"
+            }
+          ],
+          "name": "InvoiceUpdated",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "productID",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "productName",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "price",
+              "type": "uint256"
+            }
+          ],
+          "name": "ProductAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "productID",
+              "type": "uint256"
+            }
+          ],
+          "name": "ProductDeleted",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "productID",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "productName",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "price",
+              "type": "uint256"
+            }
+          ],
+          "name": "ProductUpdated",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_id",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_gstNumber",
+              "type": "string"
+            }
+          ],
+          "name": "addCustomer",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "_name",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_price",
+              "type": "uint256"
+            }
+          ],
+          "name": "addProduct",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
         },
         {
           "inputs": [
@@ -71,6 +281,335 @@ export class ItcService {
           "name": "claimITC",
           "outputs": [],
           "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_invoiceNumber",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_invoiceDate",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_supplyType",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_productIDs",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "string[]",
+              "name": "_productNames",
+              "type": "string[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_quantities",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_unitPrices",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_gstRates",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_totalAmounts",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_totalTaxableValue",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_totalGstAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_grandTotal",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "_paymentTerms",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "_isFinal",
+              "type": "bool"
+            }
+          ],
+          "name": "createInvoice",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "name": "customers",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "gstNumber",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_id",
+              "type": "string"
+            }
+          ],
+          "name": "deleteCustomer",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_invoiceNumber",
+              "type": "string"
+            }
+          ],
+          "name": "deleteInvoice",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_id",
+              "type": "uint256"
+            }
+          ],
+          "name": "deleteProduct",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "getAllInvoices",
+          "outputs": [
+            {
+              "components": [
+                {
+                  "internalType": "string",
+                  "name": "invoiceNumber",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "invoiceDate",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "supplyType",
+                  "type": "string"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "productID",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "productName",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "quantity",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "unitPrice",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "gstRate",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "totalAmount",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Company.InvoiceItem[]",
+                  "name": "items",
+                  "type": "tuple[]"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "totalTaxableValue",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "totalGstAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "grandTotal",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "string",
+                  "name": "paymentTerms",
+                  "type": "string"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isFinal",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct Company.Invoice[]",
+              "name": "",
+              "type": "tuple[]"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_invoiceNumber",
+              "type": "string"
+            }
+          ],
+          "name": "getInvoiceByNumber",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "productID",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "string",
+                  "name": "productName",
+                  "type": "string"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "quantity",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "unitPrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "gstRate",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "totalAmount",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct Company.InvoiceItem[]",
+              "name": "",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
           "type": "function"
         },
         {
@@ -145,6 +684,198 @@ export class ItcService {
             }
           ],
           "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "nextCustomerId",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "products",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "productID",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "productName",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "price",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalInvoices",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalProducts",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_id",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_gstNumber",
+              "type": "string"
+            }
+          ],
+          "name": "updateCustomer",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "_invoiceNumber",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_invoiceDate",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_supplyType",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_productIDs",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "string[]",
+              "name": "_productNames",
+              "type": "string[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_quantities",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_unitPrices",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_gstRates",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_totalAmounts",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_totalTaxableValue",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_totalGstAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_grandTotal",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "_paymentTerms",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "_isFinal",
+              "type": "bool"
+            }
+          ],
+          "name": "updateInvoice",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "_name",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_price",
+              "type": "uint256"
+            }
+          ],
+          "name": "updateProduct",
+          "outputs": [],
+          "stateMutability": "nonpayable",
           "type": "function"
         }
       ],
