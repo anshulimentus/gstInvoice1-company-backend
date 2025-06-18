@@ -90,6 +90,13 @@ export class ItcController {
     try {
       const user = req.user;
       const result = await this.itcService.getAllClaimsWithDetails(user);
+      if (!result || result.length === 0) {
+        return {
+          success: false,
+          message: 'No ITC claims found for this company.',
+          data: []
+        };
+      }
       return {
         success: true,
         data: result
