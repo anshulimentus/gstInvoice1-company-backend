@@ -880,7 +880,7 @@ export class ItcService {
           "type": "function"
         }
       ],
-      process.env.ITC_CONTRACT_ADDRESS,
+      process.env.INVOICE_CONTRACT_ADDRESS,
     );
   }
 
@@ -933,16 +933,16 @@ export class ItcService {
 
   async getSummaryForCompany(user: any) {
     const { tenant_id } = user;
-  
+
     const claims = await this.itcClaimRepo.find({
       where: { companyId: tenant_id },
     });
-  
+
     const totalInputGST = claims.reduce((sum, c) => sum + Number(c.inputGst), 0);
     const totalOutputGST = claims.reduce((sum, c) => sum + Number(c.outputGst), 0);
     const totalClaimable = claims.reduce((sum, c) => sum + Number(c.claimableAmount), 0);
     const netITC = totalInputGST > totalOutputGST ? totalInputGST - totalOutputGST : 0;
-  
+
     return {
       companyId: tenant_id,
       totalInputGST,
@@ -953,5 +953,5 @@ export class ItcService {
       claims,
     };
   }
-  
+
 }
