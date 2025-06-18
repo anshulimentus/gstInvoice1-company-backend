@@ -2,12 +2,14 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  OneToMany,
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
 } from 'typeorm';
 import { Customer } from 'src/customer/entities/customer.entity';
 import { Company } from 'src/company/entities/company.entity';
+import { ItcClaim } from 'src/itc/entities/itc-claim.entity';
 
 @Entity('invoice')
 export class Invoice {
@@ -69,5 +71,11 @@ export class Invoice {
   buyerApprovalDate: Date;
 
   @Column({ nullable: true })
-  approvedBy: string; 
+  approvedBy: string;
+
+  @Column({ name: 'is_claimed_for_itc', default: false })
+  isClaimedForITC: boolean;
+
+  @OneToMany(() => ItcClaim, itcClaim => itcClaim.invoice)
+  itcClaims: ItcClaim[];
 }

@@ -1,12 +1,25 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Invoice } from 'src/invoice/entities/invoice.entity';
 
 @Entity('itc_claims')
 export class ItcClaim {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({name: 'invoice_id'})
+  @Column({ name: 'invoice_id' })
   invoiceId: string;
+
+  @ManyToOne(() => Invoice, invoice => invoice.itcClaims)
+  @JoinColumn({ name: 'invoice_id' })
+  invoice: Invoice;
+  
 
   @Column({ name: 'company_id' })
   companyId: string;
@@ -17,7 +30,7 @@ export class ItcClaim {
   @Column('numeric', { precision: 12, scale: 2, name: 'input_gst' })
   inputGst: number;
 
-  @Column('numeric', { precision: 12, scale: 2,  name: 'output_gst' })
+  @Column('numeric', { precision: 12, scale: 2, name: 'output_gst' })
   outputGst: number;
 
   @Column('numeric', { precision: 12, scale: 2, name: 'claimable_amount' })
