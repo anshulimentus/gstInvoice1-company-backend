@@ -241,11 +241,7 @@ export class ProductService {
             unitPrice: onChainPrice, // Save in smallest unit for consistency
         });
         const savedProduct = await this.productRepository.save(newProduct);
-        console.log("🚀 ~ ProductService ~ create ~ savedProduct:", savedProduct)
 
-        console.log("🚀 ~ ProductService ~ create ~ this.account:", this.account)
-        console.log("🚀 ~ ProductService ~ create ~ this.contract:", this.contract)
-        console.log("🚀 ~ ProductService ~ create ~ this.contract.methods:", this.contract.methods)
         // Step 2: Call blockchain transaction with the productID from DB
         const tx = await this.contract.methods
         .addProduct(
