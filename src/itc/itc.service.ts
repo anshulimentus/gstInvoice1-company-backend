@@ -1278,7 +1278,7 @@ export class ItcService {
     @InjectRepository(Invoice) private invoiceRepo: Repository<Invoice>,
     @InjectRepository(ItcClaim) private itcClaimRepo: Repository<ItcClaim>,
   ) {
-    this.web3 = new Web3(process.env.RPC_URL);
+    this.web3 = new Web3(process.env.PROVIDER_URL);
     this.contract = new this.web3.eth.Contract([
       {
         "anonymous": false,
