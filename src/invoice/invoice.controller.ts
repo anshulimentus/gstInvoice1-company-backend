@@ -86,7 +86,7 @@ export class InvoiceController {
   @ApiResponse({ status: 200, description: 'List of invoices for the buyer' })
   @ApiResponse({ status: 404, description: 'No invoices found for this wallet address' })
   async findInvoicesByBuyerWallet(@Param('walletAddress') walletAddress: string) {
-    console.log(`Fetching invoices for buyer wallet: ${walletAddress}`);
+    // console.log(`Fetching invoices for buyer wallet: ${walletAddress}`);
     return await this.invoiceService.findInvoicesByBuyerWallet(walletAddress);
   }
 
@@ -98,7 +98,7 @@ export class InvoiceController {
   @ApiResponse({ status: 200, description: 'List of pending invoices for the buyer' })
   @ApiResponse({ status: 404, description: 'No pending invoices found for this wallet address' })
   async findPendingInvoicesByBuyerWallet(@Param('walletAddress') walletAddress: string) {
-    console.log(`Fetching pending invoices for buyer wallet: ${walletAddress}`);
+    // console.log(`Fetching pending invoices for buyer wallet: ${walletAddress}`);
     return await this.invoiceService.findPendingInvoicesByBuyerWallet(walletAddress);
   }
 
@@ -146,7 +146,7 @@ export class InvoiceController {
   @ApiResponse({ status: 200, description: 'Invoice statistics for the buyer' })
   @ApiResponse({ status: 404, description: 'Buyer not found' })
   async getBuyerInvoiceStatistics(@Param('walletAddress') walletAddress: string) {
-    console.log(`Fetching invoice statistics for buyer wallet: ${walletAddress}`);
+    // console.log(`Fetching invoice statistics for buyer wallet: ${walletAddress}`);
     return await this.invoiceService.getBuyerInvoiceStats(walletAddress);
   }
 

@@ -997,7 +997,7 @@ export class ItcService {
       };
 
     } catch (error) {
-      console.error('Error in getDetailedItcAnalysis:', error);
+      // console.error('Error in getDetailedItcAnalysis:', error);
       throw new Error('Failed to fetch ITC analysis');
     }
   }
@@ -1057,7 +1057,7 @@ export class ItcService {
           .claimITC(invoice.invoiceNo, walletAddress, inputGSTWei, outputGSTWei)
           .send({ from: walletAddress, gas: 500000 });
   
-        console.log("✅ Blockchain transaction successful:", tx);
+        // console.log("✅ Blockchain transaction successful:", tx);
   
         // Step 4: Save only after successful blockchain transaction
         const savedClaim = this.itcClaimRepo.create({
@@ -1093,7 +1093,7 @@ export class ItcService {
       };
   
     } catch (error) {
-      console.error('❌ Error in claimForCompany:', error);
+      // console.error('❌ Error in claimForCompany:', error);
       throw error;
     }
   }
@@ -1116,7 +1116,7 @@ export class ItcService {
         claims: analysis.existingClaims
       };
     } catch (error) {
-      console.error('Error in getSummaryForCompany:', error);
+      // console.error('Error in getSummaryForCompany:', error);
       return {
         companyId: user.tenant_id,
         walletAddress: user.walletAddress,
@@ -1214,7 +1214,7 @@ export class ItcService {
       };
 
     } catch (error) {
-      console.error('Error in getMonthlyItcBreakdown:', error);
+      // console.error('Error in getMonthlyItcBreakdown:', error);
       throw new Error('Failed to fetch monthly ITC breakdown');
     }
   }
@@ -1249,7 +1249,7 @@ export class ItcService {
       }));
 
     } catch (error) {
-      console.error('Error in getAllClaimsWithDetails:', error);
+      // console.error('Error in getAllClaimsWithDetails:', error);
       throw new Error('Failed to fetch claims with details');
     }
   }
