@@ -211,9 +211,10 @@ export class ProductService {
             }
         ], this.contractAddress);
         const sanitizedPrivateKey = this.privateKey.startsWith("0x")
-            ? this.privateKey
-            : "0x" + this.privateKey;
-
+        ? this.privateKey
+        : "0x" + this.privateKey;
+        
+        console.log("🚀 ~ ProductService ~ sanitizedPrivateKey:", sanitizedPrivateKey)
         try {
             const account = this.web3.eth.accounts.privateKeyToAccount(sanitizedPrivateKey);
             this.account = account.address;
@@ -240,6 +241,7 @@ export class ProductService {
             unitPrice: onChainPrice, // Save in smallest unit for consistency
         });
         const savedProduct = await this.productRepository.save(newProduct);
+        console.log("🚀 ~ ProductService ~ create ~ savedProduct:", savedProduct)
 
         // Step 2: Call blockchain transaction with the productID from DB
         const tx = await this.contract.methods
