@@ -269,6 +269,7 @@ export class ItcService {
   */
   async claimForCompany(user: any) {
     const { walletAddress } = user;
+    console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress)
   
     if (!walletAddress) {
       throw new Error('Wallet address is required for ITC claims');
@@ -283,6 +284,7 @@ export class ItcService {
     try {
       // Step 1: Get ITC analysis and check claimable amount
       const analysis = await this.getDetailedItcAnalysis(user);
+      console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis)
   
       if (analysis.itcSummary.claimableAmount <= 0) {
         throw new Error('No claimable ITC amount available');
@@ -297,6 +299,7 @@ export class ItcService {
         },
         relations: ['buyer'],
       });
+      console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices)
   
       if (eligibleInputInvoices.length === 0) {
         throw new Error('No unclaimed invoices available');
@@ -321,25 +324,27 @@ export class ItcService {
           // ✅ NO WEI CONVERSION - Use actual GST amounts
           // Option 1: Store as whole numbers (multiply by 100 for 2 decimal precision)
           const inputGSTAmount = Math.round(inputGST); // Convert to smallest unit (paise)
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ inputGSTAmount:", inputGSTAmount)
           const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST);
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ outputGSTAmount:", outputGSTAmount)
   
           // Option 2: Or store as is if your contract handles decimals
           // const inputGSTAmount = Math.round(inputGST);
           // const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST);
   
-          console.log(`Input GST Amount: ₹${inputGST} (${inputGSTAmount} paise)`);
-          console.log(`Output GST Amount: ₹${analysis.itcSummary.totalOutputGST} (${outputGSTAmount} paise)`);
+        
           console.log(`Using wallet address: ${walletAddress}`);
   
           // ✅ Gas estimation with actual GST amounts
           const gasEstimate = await this.contract.methods
-            .claimITC(
-              invoice.invoiceNo,
-              walletAddress,
-              inputGSTAmount,   // ✅ Actual GST amount, not Wei
-              outputGSTAmount   // ✅ Actual GST amount, not Wei
-            )
-            .estimateGas({ from: walletAddress });
+          .claimITC(
+            invoice.invoiceNo,
+            walletAddress,
+            inputGSTAmount,   // ✅ Actual GST amount, not Wei
+            outputGSTAmount   // ✅ Actual GST amount, not Wei
+          )
+          .estimateGas({ from: walletAddress });
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate)
   
           const gasPrice = await this.web3.eth.getGasPrice();
   
@@ -370,6 +375,7 @@ export class ItcService {
             transactionHash: tx.transactionHash,
             claimedAt: new Date(),
           });
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim)
   
           await this.itcClaimRepo.save(savedClaim);
           claims.push(savedClaim);
