@@ -1273,12 +1273,15 @@ import { BuyerInfoDto } from 'src/invoice/dto/buyer-invoice-response.dto';
 export class ItcService {
   private web3: Web3;
   private contract: any;
+  private providerUrl: string;
 
   constructor(
     @InjectRepository(Invoice) private invoiceRepo: Repository<Invoice>,
     @InjectRepository(ItcClaim) private itcClaimRepo: Repository<ItcClaim>,
   ) {
-    this.web3 = new Web3(process.env.PROVIDER_URL);
+    this.providerUrl = process.env.PROVIDER_URL || '';
+    // this.web3 = new Web3(process.env.PROVIDER_URL);
+    this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerUrl));
     this.contract = new this.web3.eth.Contract([
       {
         "anonymous": false,
