@@ -374,9 +374,7 @@ export class ItcService {
             throw new Error('Private key not configured for blockchain transactions');
           }
 
-          // Create account from private key
-          const account = this.web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY);
-          this.web3.eth.accounts.wallet.add(account);
+         
 
           // ✅ Gas estimation with correct data types
           const gasEstimate = await this.contract.methods
