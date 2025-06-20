@@ -165,9 +165,7 @@ export class ItcService {
         "stateMutability": "view",
         "type": "function"
       }
-    ] as AbiItem[],
-      process.env.ITC_CONTRACT_ADDRESS,
-    );
+    ], this.contractAddress);
 
     const sanitizedPrivateKey = this.privateKey.startsWith("0x")
                 ? this.privateKey
