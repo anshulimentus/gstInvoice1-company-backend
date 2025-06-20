@@ -386,7 +386,7 @@ export class ItcService {
               inputGSTAmount.toString(),   // ✅ Convert to string for uint256
               outputGSTAmount.toString()   // ✅ Convert to string for uint256
             )
-            .estimateGas({ from: account.address });
+            .estimateGas({ from: this.account });
 
           console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate);
 
