@@ -305,7 +305,7 @@ export class ItcService {
   */
   async claimForCompany(user: any) {
     const { walletAddress } = user;
-    console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress);
+    // console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress);
 
     if (!walletAddress) {
       throw new Error('Wallet address is required for ITC claims');
@@ -320,7 +320,7 @@ export class ItcService {
     try {
       // Step 1: Get ITC analysis and check claimable amount
       const analysis = await this.getDetailedItcAnalysis(user);
-      console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis);
+      // console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis);
 
       if (analysis.itcSummary.claimableAmount <= 0) {
         throw new Error('No claimable ITC amount available');
@@ -335,7 +335,7 @@ export class ItcService {
         },
         relations: ['buyer'],
       });
-      console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices);
+      // console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices);
 
       if (eligibleInputInvoices.length === 0) {
         throw new Error('No unclaimed invoices available');
@@ -344,6 +344,8 @@ export class ItcService {
       const claims: ItcClaim[] = [];
       const claimedInvoices: Invoice[] = [];
       let remainingClaimable = analysis.itcSummary.claimableAmount;
+      let remainingOutputGST = analysis.itcSummary.totalOutputGST; // Track remaining output GST
+    
 
       // Process each eligible invoice
       for (const invoice of eligibleInputInvoices) {
@@ -360,8 +362,8 @@ export class ItcService {
           // ✅ CORRECT: Convert to proper format for Solidity uint256
           // Since your contract expects uint256, convert rupees to smallest unit (paise)
           // 1 Rupee = 100 Paise, so multiply by 100 to avoid decimals
-          const inputGSTAmount = Math.round(inputGST * 100); // Convert to paise (smallest unit)
-          const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST * 100); // Convert to paise
+          const inputGSTAmount = Math.round(inputGST); // Convert to paise (smallest unit)
+          const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST); // Convert to paise
 
           console.log("🚀 ~ ItcService ~ claimForCompany ~ inputGSTAmount (paise):", inputGSTAmount);
           console.log("🚀 ~ ItcService ~ claimForCompany ~ outputGSTAmount (paise):", outputGSTAmount);
@@ -386,7 +388,7 @@ export class ItcService {
             )
             .estimateGas({ from: this.account });
 
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate);
+          // console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate);
 
           const gasPrice = await this.web3.eth.getGasPrice();
 
@@ -420,7 +422,7 @@ export class ItcService {
             transactionHash: tx.transactionHash,
             claimedAt: new Date(),
           });
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim);
+          // console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim);
 
           await this.itcClaimRepo.save(savedClaim);
           claims.push(savedClaim);
@@ -430,6 +432,10 @@ export class ItcService {
           claimedInvoices.push(invoice);
 
           remainingClaimable -= claimAmountForThisInvoice;
+          // Update tracking variables
+          remainingOutputGST -= claimAmountForThisInvoice;
+          claims.push(savedClaim);
+          claimedInvoices.push(invoice);
 
           // Add delay between transactions to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 1000));
