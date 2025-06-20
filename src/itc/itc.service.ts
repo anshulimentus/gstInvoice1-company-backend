@@ -18,8 +18,8 @@ export class ItcService {
     @InjectRepository(ItcClaim) private itcClaimRepo: Repository<ItcClaim>,
   ) {
     this.providerUrl = process.env.PROVIDER_URL || '';
-    // this.web3 = new Web3(process.env.PROVIDER_URL);
-    this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerUrl));
+    this.web3 = new Web3(process.env.PROVIDER_URL);
+    // this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerUrl));
     this.contract = new this.web3.eth.Contract([
       {
         "anonymous": false,
