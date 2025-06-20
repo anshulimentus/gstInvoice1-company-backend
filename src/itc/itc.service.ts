@@ -269,7 +269,7 @@ export class ItcService {
   */
   async claimForCompany(user: any) {
     const { walletAddress } = user;
-    console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress)
+    console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress);
   
     if (!walletAddress) {
       throw new Error('Wallet address is required for ITC claims');
@@ -284,7 +284,7 @@ export class ItcService {
     try {
       // Step 1: Get ITC analysis and check claimable amount
       const analysis = await this.getDetailedItcAnalysis(user);
-      console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis)
+      console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis);
   
       if (analysis.itcSummary.claimableAmount <= 0) {
         throw new Error('No claimable ITC amount available');
@@ -299,7 +299,7 @@ export class ItcService {
         },
         relations: ['buyer'],
       });
-      console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices)
+      console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices);
   
       if (eligibleInputInvoices.length === 0) {
         throw new Error('No unclaimed invoices available');
@@ -321,61 +321,72 @@ export class ItcService {
         try {
           console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo}`);
   
-          // ✅ NO WEI CONVERSION - Use actual GST amounts
-          // Option 1: Store as whole numbers (multiply by 100 for 2 decimal precision)
-          const inputGSTAmount = Math.round(inputGST); // Convert to smallest unit (paise)
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ inputGSTAmount:", inputGSTAmount)
-          const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST);
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ outputGSTAmount:", outputGSTAmount)
+          // ✅ CORRECT: Convert to proper format for Solidity uint256
+          // Since your contract expects uint256, convert rupees to smallest unit (paise)
+          // 1 Rupee = 100 Paise, so multiply by 100 to avoid decimals
+          const inputGSTAmount = Math.round(inputGST * 100); // Convert to paise (smallest unit)
+          const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST * 100); // Convert to paise
+          
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ inputGSTAmount (paise):", inputGSTAmount);
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ outputGSTAmount (paise):", outputGSTAmount);
   
-          // Option 2: Or store as is if your contract handles decimals
-          // const inputGSTAmount = Math.round(inputGST);
-          // const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST);
-  
-        
           console.log(`Using wallet address: ${walletAddress}`);
   
-          // ✅ Gas estimation with actual GST amounts
+          // ✅ SOLUTION 1: Use signed transactions instead of eth_sendTransaction
+          // You need to have the private key to sign transactions
+          if (!process.env.PRIVATE_KEY) {
+            throw new Error('Private key not configured for blockchain transactions');
+          }
+  
+          // Create account from private key
+          const account = this.web3.eth.accounts.privateKeyToAccount(process.env.PRIVATE_KEY);
+          this.web3.eth.accounts.wallet.add(account);
+  
+          // ✅ Gas estimation with correct data types
           const gasEstimate = await this.contract.methods
-          .claimITC(
-            invoice.invoiceNo,
-            walletAddress,
-            inputGSTAmount,   // ✅ Actual GST amount, not Wei
-            outputGSTAmount   // ✅ Actual GST amount, not Wei
-          )
-          .estimateGas({ from: walletAddress });
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate)
+            .claimITC(
+              invoice.invoiceNo,
+              walletAddress,
+              inputGSTAmount.toString(),   // ✅ Convert to string for uint256
+              outputGSTAmount.toString()   // ✅ Convert to string for uint256
+            )
+            .estimateGas({ from: account.address });
+          
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate);
   
           const gasPrice = await this.web3.eth.getGasPrice();
   
-          // ✅ Transaction with actual GST amounts
+          // ✅ SOLUTION 2: Create and send signed transaction
           const tx = await this.contract.methods
             .claimITC(
               invoice.invoiceNo,
               walletAddress,
-              inputGSTAmount.toString(),   // ✅ Actual GST amount, not Wei
-              outputGSTAmount.toString()   // ✅ Actual GST amount, not Wei
+              inputGSTAmount.toString(),   // ✅ String representation of uint256
+              outputGSTAmount.toString()   // ✅ String representation of uint256
             )
             .send({
-              from: walletAddress,
+              from: account.address,  // Use the account with private key
               gas: Math.floor(Number(gasEstimate) * 1.2).toString(),
-              gasPrice: gasPrice.toString()
+              gasPrice: gasPrice.toString(),
+              // Add timeout and confirmation settings
+              timeout: 60000, // 60 seconds timeout
+              confirmations: 1
             });
   
           console.log("✅ Blockchain transaction successful:", tx.transactionHash);
   
-          // Step 4: Save claim to database
+          // Step 4: Save claim to database with original amounts
           const savedClaim = this.itcClaimRepo.create({
             invoiceId: invoice.invoiceId,
             companyId: user.tenant_id,
             companyWallet: walletAddress,
-            inputGst: inputGST,  // ✅ Store original amount in database
+            inputGst: inputGST,  // ✅ Store original rupee amount in database
             outputGst: analysis.itcSummary.totalOutputGST,
             claimableAmount: claimAmountForThisInvoice,
             transactionHash: tx.transactionHash,
             claimedAt: new Date(),
           });
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim)
+          console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim);
   
           await this.itcClaimRepo.save(savedClaim);
           claims.push(savedClaim);
@@ -386,11 +397,25 @@ export class ItcService {
   
           remainingClaimable -= claimAmountForThisInvoice;
   
+          // Add delay between transactions to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+  
         } catch (txError) {
           console.error(`❌ Blockchain transaction failed for invoice ${invoice.invoiceNo}:`, txError);
+          
+          // Enhanced error logging
+          if (txError.cause) {
+            console.error('Error cause:', txError.cause);
+          }
           if (txError.message) {
             console.error(`Error message: ${txError.message}`);
           }
+          if (txError.statusCode === 429) {
+            console.error('Rate limit exceeded. Consider implementing retry logic.');
+            // Wait longer before continuing
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+          
           continue;
         }
       }
