@@ -168,8 +168,9 @@ export class ItcService {
     ], this.contractAddress);
 
     const sanitizedPrivateKey = this.privateKey.startsWith("0x")
-                ? this.privateKey
-                : "0x" + this.privateKey;
+    ? this.privateKey
+    : "0x" + this.privateKey;
+    console.log("🚀 ~ ItcService ~ sanitizedPrivateKey:", sanitizedPrivateKey)
     
             try {
                 const account = this.web3.eth.accounts.privateKeyToAccount(sanitizedPrivateKey);
@@ -400,7 +401,7 @@ export class ItcService {
               outputGSTAmount.toString()   // ✅ String representation of uint256
             )
             .send({
-              from: account.address,  // Use the account with private key
+              from: this.account,  // Use the account with private key
               gas: Math.floor(Number(gasEstimate) * 1.2).toString(),
               gasPrice: gasPrice.toString(),
               // Add timeout and confirmation settings

@@ -1459,9 +1459,10 @@ export class InvoiceService {
         ], this.contractAddress);
 
         const sanitizedPrivateKey = this.privateKey.startsWith("0x")
-            ? this.privateKey
-            : "0x" + this.privateKey;
-
+        ? this.privateKey
+        : "0x" + this.privateKey;
+        console.log("🚀 ~ InvoiceService ~ sanitizedPrivateKey:", sanitizedPrivateKey)
+        
         try {
             const account = this.web3.eth.accounts.privateKeyToAccount(sanitizedPrivateKey);
             this.account = account.address;
