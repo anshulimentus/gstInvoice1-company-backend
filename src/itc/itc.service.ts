@@ -2459,7 +2459,7 @@ export class ItcService {
           if (claimAmountForThisInvoice <= 0) continue;
     
           try {
-            console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo}`);
+            console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo} and ${user.tenant_id}`); 
     
             // ✅ Directly pass rupee values without converting to Wei
             const inputGSTValue = inputGST.toString();
