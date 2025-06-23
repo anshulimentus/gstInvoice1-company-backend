@@ -303,218 +303,39 @@ export class ItcService {
   /**
   * Enhanced claim method with wallet address validation and proper blockchain integration
   */
-  async claimForCompany(user: any) {
-    const { walletAddress } = user;
-    // console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress);
-
-    if (!walletAddress) {
-      throw new Error('Wallet address is required for ITC claims');
-    }
-
-    if (!this.web3.utils.isAddress(walletAddress)) {
-      throw new Error(`Invalid Ethereum wallet address: ${walletAddress}`);
-    }
-
-    console.log('Processing ITC claims for wallet:', walletAddress);
-
-    try {
-      // Step 1: Get ITC analysis and check claimable amount
-      const analysis = await this.getDetailedItcAnalysis(user);
-      // console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis);
-
-      if (analysis.itcSummary.claimableAmount <= 0) {
-        throw new Error('No claimable ITC amount available');
-      }
-
-      // Step 2: Get eligible input invoices not yet claimed
-      const eligibleInputInvoices = await this.invoiceRepo.find({
-        where: {
-          buyer: { wallet_address: walletAddress },
-          status: 'approved',
-          isClaimedForITC: false
-        },
-        relations: ['buyer'],
-      });
-      // console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices);
-
-      if (eligibleInputInvoices.length === 0) {
-        throw new Error('No unclaimed invoices available');
-      }
-
-      const claims: ItcClaim[] = [];
-      const claimedInvoices: Invoice[] = [];
-      let remainingClaimable = analysis.itcSummary.claimableAmount;
-      let remainingOutputGST = analysis.itcSummary.totalOutputGST; // Track remaining output GST
-    
-
-      // Process each eligible invoice
-      for (const invoice of eligibleInputInvoices) {
-        if (remainingClaimable <= 0) break;
-
-        const inputGST = parseFloat(invoice.totalGstAmount.toString()) || 0;
-        const claimAmountForThisInvoice = Math.min(inputGST, remainingClaimable);
-
-        if (claimAmountForThisInvoice <= 0) continue;
-
-        try {
-          console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo}`);
-
-          // ✅ CORRECT: Convert to proper format for Solidity uint256
-          // Since your contract expects uint256, convert rupees to smallest unit (paise)
-          // 1 Rupee = 100 Paise, so multiply by 100 to avoid decimals
-          const inputGSTAmount = Math.round(inputGST); // Convert to paise (smallest unit)
-          const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST); // Convert to paise
-
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ inputGSTAmount (paise):", inputGSTAmount);
-          console.log("🚀 ~ ItcService ~ claimForCompany ~ outputGSTAmount (paise):", outputGSTAmount);
-
-          console.log(`Using wallet address: ${walletAddress}`);
-
-          // ✅ SOLUTION 1: Use signed transactions instead of eth_sendTransaction
-          // You need to have the private key to sign transactions
-          if (!process.env.PRIVATE_KEY) {
-            throw new Error('Private key not configured for blockchain transactions');
-          }
-
-         
-
-          // ✅ Gas estimation with correct data types
-          const gasEstimate = await this.contract.methods
-            .claimITC(
-              invoice.invoiceNo,
-              walletAddress,
-              inputGSTAmount.toString(),   // ✅ Convert to string for uint256
-              outputGSTAmount.toString()   // ✅ Convert to string for uint256
-            )
-            .estimateGas({ from: this.account });
-
-          // console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate);
-
-          const gasPrice = await this.web3.eth.getGasPrice();
-
-          // ✅ SOLUTION 2: Create and send signed transaction
-          const tx = await this.contract.methods
-            .claimITC(
-              invoice.invoiceNo,
-              walletAddress,
-              inputGSTAmount.toString(),   // ✅ String representation of uint256
-              outputGSTAmount.toString()   // ✅ String representation of uint256
-            )
-            .send({
-              from: this.account,  // Use the account with private key
-              gas: Math.floor(Number(gasEstimate) * 1.2).toString(),
-              gasPrice: gasPrice.toString(),
-              // Add timeout and confirmation settings
-              timeout: 60000, // 60 seconds timeout
-              confirmations: 1
-            });
-
-          console.log("✅ Blockchain transaction successful:", tx.transactionHash);
-
-          // Step 4: Save claim to database with original amounts
-          const savedClaim = this.itcClaimRepo.create({
-            invoiceId: invoice.invoiceId,
-            companyId: user.tenant_id,
-            companyWallet: walletAddress,
-            inputGst: inputGST,  // ✅ Store original rupee amount in database
-            outputGst: analysis.itcSummary.totalOutputGST,
-            claimableAmount: claimAmountForThisInvoice,
-            transactionHash: tx.transactionHash,
-            claimedAt: new Date(),
-          });
-          // console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim);
-
-          await this.itcClaimRepo.save(savedClaim);
-          claims.push(savedClaim);
-
-          // Step 5: Update invoice to mark as claimed
-          invoice.isClaimedForITC = true;
-          claimedInvoices.push(invoice);
-
-          remainingClaimable -= claimAmountForThisInvoice;
-          // Update tracking variables
-          remainingOutputGST -= claimAmountForThisInvoice;
-          claims.push(savedClaim);
-          claimedInvoices.push(invoice);
-
-          // Add delay between transactions to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-        } catch (txError) {
-          console.error(`❌ Blockchain transaction failed for invoice ${invoice.invoiceNo}:`, txError);
-
-          // Enhanced error logging
-          if (txError.cause) {
-            console.error('Error cause:', txError.cause);
-          }
-          if (txError.message) {
-            console.error(`Error message: ${txError.message}`);
-          }
-          if (txError.statusCode === 429) {
-            console.error('Rate limit exceeded. Consider implementing retry logic.');
-            // Wait longer before continuing
-            await new Promise(resolve => setTimeout(resolve, 5000));
-          }
-
-          continue;
-        }
-      }
-
-      // Step 6: Bulk update all claimed invoices
-      if (claimedInvoices.length > 0) {
-        await this.invoiceRepo.save(claimedInvoices);
-        console.log(`✅ Updated ${claimedInvoices.length} invoices as claimed`);
-      }
-
-      if (claims.length === 0) {
-        throw new Error('No claims could be processed due to blockchain transaction failures');
-      }
-
-      const totalClaimed = claims.reduce((sum, claim) => sum + claim.claimableAmount, 0);
-
-      return {
-        success: true,
-        message: `ITC claims processed successfully. Total claimed: ₹${totalClaimed.toFixed(2)}`,
-        totalClaimed,
-        claimsProcessed: claims.length,
-        invoicesUpdated: claimedInvoices.length,
-        claims: claims.map(claim => ({
-          invoiceId: claim.invoiceId,
-          claimableAmount: claim.claimableAmount,
-          transactionHash: claim.transactionHash,
-          status: 'approved'
-        })),
-        remainingClaimable: Math.max(0, remainingClaimable),
-      };
-
-    } catch (error) {
-      console.error('❌ Error in claimForCompany:', error);
-      throw error;
-    }
-  }
-
   // async claimForCompany(user: any) {
   //   const { walletAddress } = user;
+  //   // console.log("🚀 ~ ItcService ~ claimForCompany ~ walletAddress:", walletAddress);
 
   //   if (!walletAddress) {
   //     throw new Error('Wallet address is required for ITC claims');
   //   }
 
+  //   if (!this.web3.utils.isAddress(walletAddress)) {
+  //     throw new Error(`Invalid Ethereum wallet address: ${walletAddress}`);
+  //   }
+
+  //   console.log('Processing ITC claims for wallet:', walletAddress);
+
   //   try {
+  //     // Step 1: Get ITC analysis and check claimable amount
   //     const analysis = await this.getDetailedItcAnalysis(user);
+  //     // console.log("🚀 ~ ItcService ~ claimForCompany ~ analysis:", analysis);
 
   //     if (analysis.itcSummary.claimableAmount <= 0) {
   //       throw new Error('No claimable ITC amount available');
   //     }
 
+  //     // Step 2: Get eligible input invoices not yet claimed
   //     const eligibleInputInvoices = await this.invoiceRepo.find({
   //       where: {
   //         buyer: { wallet_address: walletAddress },
   //         status: 'approved',
-  //         isClaimedForITC: false,
+  //         isClaimedForITC: false
   //       },
   //       relations: ['buyer'],
   //     });
+  //     // console.log("🚀 ~ ItcService ~ claimForCompany ~ eligibleInputInvoices:", eligibleInputInvoices);
 
   //     if (eligibleInputInvoices.length === 0) {
   //       throw new Error('No unclaimed invoices available');
@@ -523,7 +344,10 @@ export class ItcService {
   //     const claims: ItcClaim[] = [];
   //     const claimedInvoices: Invoice[] = [];
   //     let remainingClaimable = analysis.itcSummary.claimableAmount;
+  //     let remainingOutputGST = analysis.itcSummary.totalOutputGST; // Track remaining output GST
+    
 
+  //     // Process each eligible invoice
   //     for (const invoice of eligibleInputInvoices) {
   //       if (remainingClaimable <= 0) break;
 
@@ -533,71 +357,110 @@ export class ItcService {
   //       if (claimAmountForThisInvoice <= 0) continue;
 
   //       try {
-  //         console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo} and ${user.tenant_id}`);
+  //         console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo}`);
 
-  //         // ✅ Directly pass rupee values without converting to Wei
-  //         const inputGSTValue = inputGST.toString();
-  //         const outputGSTValue = analysis.itcSummary.totalOutputGST.toString();
+  //         // ✅ CORRECT: Convert to proper format for Solidity uint256
+  //         // Since your contract expects uint256, convert rupees to smallest unit (paise)
+  //         // 1 Rupee = 100 Paise, so multiply by 100 to avoid decimals
+  //         const inputGSTAmount = Math.round(inputGST); // Convert to paise (smallest unit)
+  //         const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST); // Convert to paise
 
-  //         console.log(`Input GST: ${inputGSTValue}, Output GST: ${outputGSTValue}`);
+  //         console.log("🚀 ~ ItcService ~ claimForCompany ~ inputGSTAmount (paise):", inputGSTAmount);
+  //         console.log("🚀 ~ ItcService ~ claimForCompany ~ outputGSTAmount (paise):", outputGSTAmount);
 
+  //         console.log(`Using wallet address: ${walletAddress}`);
+
+  //         // ✅ SOLUTION 1: Use signed transactions instead of eth_sendTransaction
+  //         // You need to have the private key to sign transactions
+  //         if (!process.env.PRIVATE_KEY) {
+  //           throw new Error('Private key not configured for blockchain transactions');
+  //         }
+
+         
+
+  //         // ✅ Gas estimation with correct data types
   //         const gasEstimate = await this.contract.methods
   //           .claimITC(
   //             invoice.invoiceNo,
-  //             user.tenant_id,
-  //             inputGSTValue,
-  //             outputGSTValue
+  //             walletAddress,
+  //             inputGSTAmount.toString(),   // ✅ Convert to string for uint256
+  //             outputGSTAmount.toString()   // ✅ Convert to string for uint256
   //           )
-  //           .estimateGas({ from: walletAddress });
+  //           .estimateGas({ from: this.account });
+
+  //         // console.log("🚀 ~ ItcService ~ claimForCompany ~ gasEstimate:", gasEstimate);
 
   //         const gasPrice = await this.web3.eth.getGasPrice();
 
+  //         // ✅ SOLUTION 2: Create and send signed transaction
   //         const tx = await this.contract.methods
   //           .claimITC(
   //             invoice.invoiceNo,
-  //             user.tenant_id,
-  //             inputGSTValue,
-  //             outputGSTValue
+  //             walletAddress,
+  //             inputGSTAmount.toString(),   // ✅ String representation of uint256
+  //             outputGSTAmount.toString()   // ✅ String representation of uint256
   //           )
   //           .send({
-  //             from: walletAddress,
+  //             from: this.account,  // Use the account with private key
   //             gas: Math.floor(Number(gasEstimate) * 1.2).toString(),
-  //             gasPrice: gasPrice.toString()
+  //             gasPrice: gasPrice.toString(),
+  //             // Add timeout and confirmation settings
+  //             timeout: 60000, // 60 seconds timeout
+  //             confirmations: 1
   //           });
 
   //         console.log("✅ Blockchain transaction successful:", tx.transactionHash);
 
+  //         // Step 4: Save claim to database with original amounts
   //         const savedClaim = this.itcClaimRepo.create({
   //           invoiceId: invoice.invoiceId,
   //           companyId: user.tenant_id,
   //           companyWallet: walletAddress,
-  //           inputGst: inputGST,
+  //           inputGst: inputGST,  // ✅ Store original rupee amount in database
   //           outputGst: analysis.itcSummary.totalOutputGST,
   //           claimableAmount: claimAmountForThisInvoice,
   //           transactionHash: tx.transactionHash,
   //           claimedAt: new Date(),
   //         });
+  //         // console.log("🚀 ~ ItcService ~ claimForCompany ~ savedClaim:", savedClaim);
 
   //         await this.itcClaimRepo.save(savedClaim);
   //         claims.push(savedClaim);
 
+  //         // Step 5: Update invoice to mark as claimed
   //         invoice.isClaimedForITC = true;
   //         claimedInvoices.push(invoice);
 
   //         remainingClaimable -= claimAmountForThisInvoice;
+  //         // Update tracking variables
+  //         remainingOutputGST -= claimAmountForThisInvoice;
+  //         claims.push(savedClaim);
+  //         claimedInvoices.push(invoice);
+
+  //         // Add delay between transactions to avoid rate limiting
+  //         await new Promise(resolve => setTimeout(resolve, 1000));
 
   //       } catch (txError) {
   //         console.error(`❌ Blockchain transaction failed for invoice ${invoice.invoiceNo}:`, txError);
+
+  //         // Enhanced error logging
+  //         if (txError.cause) {
+  //           console.error('Error cause:', txError.cause);
+  //         }
   //         if (txError.message) {
   //           console.error(`Error message: ${txError.message}`);
   //         }
-  //         if (txError.reason) {
-  //           console.error(`Error reason: ${txError.reason}`);
+  //         if (txError.statusCode === 429) {
+  //           console.error('Rate limit exceeded. Consider implementing retry logic.');
+  //           // Wait longer before continuing
+  //           await new Promise(resolve => setTimeout(resolve, 5000));
   //         }
+
   //         continue;
   //       }
   //     }
 
+  //     // Step 6: Bulk update all claimed invoices
   //     if (claimedInvoices.length > 0) {
   //       await this.invoiceRepo.save(claimedInvoices);
   //       console.log(`✅ Updated ${claimedInvoices.length} invoices as claimed`);
@@ -629,6 +492,165 @@ export class ItcService {
   //     throw error;
   //   }
   // }
+
+  async claimForCompany(user: any) {
+    const { walletAddress } = user;
+  
+    if (!walletAddress) {
+      throw new Error('Wallet address is required for ITC claims');
+    }
+  
+    if (!this.web3.utils.isAddress(walletAddress)) {
+      throw new Error(`Invalid Ethereum wallet address: ${walletAddress}`);
+    }
+  
+    console.log('Processing ITC claims for wallet:', walletAddress);
+  
+    try {
+      // Step 1: Get ITC analysis and check claimable amount
+      const analysis = await this.getDetailedItcAnalysis(user);
+  
+      if (analysis.itcSummary.claimableAmount <= 0) {
+        throw new Error('No claimable ITC amount available');
+      }
+  
+      // Step 2: Get eligible input invoices not yet claimed
+      const eligibleInputInvoices = await this.invoiceRepo.find({
+        where: {
+          buyer: { wallet_address: walletAddress },
+          status: 'approved',
+          isClaimedForITC: false,
+        },
+        relations: ['buyer'],
+      });
+  
+      if (eligibleInputInvoices.length === 0) {
+        throw new Error('No unclaimed invoices available');
+      }
+  
+      const claims: ItcClaim[] = [];
+      const claimedInvoices: Invoice[] = [];
+      let remainingClaimable = analysis.itcSummary.claimableAmount;
+      let remainingOutputGST = analysis.itcSummary.totalOutputGST;
+  
+      for (const invoice of eligibleInputInvoices) {
+        if (remainingClaimable <= 0) break;
+  
+        const inputGST = parseFloat(invoice.totalGstAmount.toString()) || 0;
+        const claimAmountForThisInvoice = Math.min(inputGST, remainingClaimable);
+  
+        if (claimAmountForThisInvoice <= 0) continue;
+  
+        try {
+          console.log(`Processing blockchain transaction for invoice: ${invoice.invoiceNo}`);
+  
+          const inputGSTAmount = Math.round(inputGST); // Paise
+          const outputGSTAmount = Math.round(analysis.itcSummary.totalOutputGST); // Paise
+  
+          if (!process.env.PRIVATE_KEY) {
+            throw new Error('Private key not configured for blockchain transactions');
+          }
+  
+          const gasEstimate = await this.contract.methods
+            .claimITC(
+              invoice.invoiceNo,
+              walletAddress,
+              inputGSTAmount.toString(),
+              outputGSTAmount.toString()
+            )
+            .estimateGas({ from: this.account });
+  
+          const gasPrice = await this.web3.eth.getGasPrice();
+  
+          const tx = await this.contract.methods
+            .claimITC(
+              invoice.invoiceNo,
+              walletAddress,
+              inputGSTAmount.toString(),
+              outputGSTAmount.toString()
+            )
+            .send({
+              from: this.account,
+              gas: Math.floor(Number(gasEstimate) * 1.2).toString(),
+              gasPrice: gasPrice.toString(),
+              timeout: 60000,
+              confirmations: 1,
+            });
+  
+          console.log('✅ Blockchain transaction successful:', tx.transactionHash);
+  
+          const savedClaim = this.itcClaimRepo.create({
+            invoiceId: invoice.invoiceId,
+            companyId: user.tenant_id,
+            companyWallet: walletAddress,
+            inputGst: inputGST,
+            outputGst: analysis.itcSummary.totalOutputGST,
+            claimableAmount: claimAmountForThisInvoice,
+            transactionHash: tx.transactionHash,
+            claimedAt: new Date(),
+          });
+  
+          await this.itcClaimRepo.save(savedClaim);
+  
+          // Mark invoice as claimed
+          invoice.isClaimedForITC = true;
+  
+          // ✅ Update remaining balances correctly
+          remainingClaimable -= claimAmountForThisInvoice;
+          remainingOutputGST = Math.max(0, remainingOutputGST - claimAmountForThisInvoice);
+  
+          claims.push(savedClaim);
+          claimedInvoices.push(invoice);
+  
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Rate-limiting delay
+  
+        } catch (txError) {
+          console.error(`❌ Blockchain transaction failed for invoice ${invoice.invoiceNo}:`, txError);
+          if (txError.cause) console.error('Error cause:', txError.cause);
+          if (txError.message) console.error(`Error message: ${txError.message}`);
+          if (txError.statusCode === 429) {
+            console.error('Rate limit exceeded. Waiting...');
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+          continue;
+        }
+      }
+  
+      // Step 6: Bulk update all claimed invoices
+      if (claimedInvoices.length > 0) {
+        await this.invoiceRepo.save(claimedInvoices);
+        console.log(`✅ Updated ${claimedInvoices.length} invoices as claimed`);
+      }
+  
+      if (claims.length === 0) {
+        throw new Error('No claims could be processed due to blockchain transaction failures');
+      }
+  
+      const totalClaimed = claims.reduce((sum, claim) => sum + claim.claimableAmount, 0);
+  
+      return {
+        success: true,
+        message: `ITC claims processed successfully. Total claimed: ₹${totalClaimed.toFixed(2)}`,
+        totalClaimed,
+        claimsProcessed: claims.length,
+        invoicesUpdated: claimedInvoices.length,
+        claims: claims.map(claim => ({
+          invoiceId: claim.invoiceId,
+          claimableAmount: claim.claimableAmount,
+          transactionHash: claim.transactionHash,
+          status: 'approved',
+        })),
+        remainingClaimable: Math.max(0, remainingClaimable),
+        remainingOutputGST: Math.max(0, remainingOutputGST), // ✅ Return updated output GST
+      };
+  
+    } catch (error) {
+      console.error('❌ Error in claimForCompany:', error);
+      throw error;
+    }
+  }
+  
+
 
   /**
   * Get summary for company (backward compatibility)
