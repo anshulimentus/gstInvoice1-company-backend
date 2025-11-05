@@ -6,8 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npx nest build",
-    "build:prod": "NODE_ENV=production npx nest build",
+    "build": "tsc -p tsconfig.build.json",
+    "build:prod": "NODE_ENV=production tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
