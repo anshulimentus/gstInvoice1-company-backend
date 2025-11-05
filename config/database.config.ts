@@ -15,10 +15,16 @@ config();
 export const typeOrmConfig: TypeOrmModuleOptions = {
     type: 'postgres',
     url: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     entities: [Product, Customer, User, ImageEntity, State, Company, Invoice, ItcClaim],
     synchronize: false,
-    logging: true,
+    logging: process.env.NODE_ENV !== 'production', // Disable logging in production
     migrations: ["../src/migrations/*.ts"],
     autoLoadEntities: true,
+    extra: process.env.NODE_ENV === 'production' ? {
+        max: 20, // Maximum number of connections
+        connectionTimeoutMillis: 2000,
+        query_timeout: 10000,
+        statement_timeout: 10000,
+    } : undefined,
 };
