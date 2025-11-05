@@ -6,7 +6,6 @@ import { UsersService } from '../users/users.service';
 import { Company } from '../company/entities/company.entity';
 import { ethers } from 'ethers';
 
-
 @Injectable()
 export class AuthService {
   private readonly nonces = new Map<string, string>();
@@ -22,14 +21,13 @@ export class AuthService {
   async validateUser(email: string, pass: string): Promise<any> {
     this.logger.log(`Validating user with email: ${email}`);
     const user = await this.usersService.findOneByEmail(email);
-    
+
     if (user && pass === user.password) {
       this.logger.log(`User validated successfully: ${email}`);
       const { password, ...result } = user;
       return result;
     }
-    
-    
+
     this.logger.warn(`User validation failed for email: ${email}`);
     return null;
   }
@@ -42,19 +40,19 @@ export class AuthService {
     });
 
     const walletAddress = company?.legalRepresentative?.toLowerCase() || null;
-    
+
     // Include tenant_id in the JWT payload
-    const payload = { 
-      email: user.email, 
-      sub: user.id, 
+    const payload = {
+      email: user.email,
+      sub: user.id,
       role: 'company', // Set role as company for company login
       tenant_id: user.tenantId, // Include tenant_id
       walletAddress: walletAddress,
     };
-    
+
     const token = this.jwtService.sign(payload);
     this.logger.log(`Token generated for user: ${user.email}`);
-    
+
     return {
       token,
       role: 'company',
@@ -65,7 +63,7 @@ export class AuthService {
         companyName: user.companyName,
         tenantId: user.tenantId,
         walletAddress: walletAddress,
-      }
+      },
     };
   }
 
@@ -78,32 +76,40 @@ export class AuthService {
     const lowercase = walletAddress.toLowerCase();
     const nonce = Math.floor(Math.random() * 1000000).toString();
     this.nonces.set(lowercase, nonce);
-    this.logger.log(`Nonce generated for wallet: ${walletAddress}, nonce: ${nonce}`);
+    this.logger.log(
+      `Nonce generated for wallet: ${walletAddress}, nonce: ${nonce}`,
+    );
     return { nonce };
   }
 
   async walletLogin(walletAddress: string, signature: string): Promise<any> {
     const lowercaseAddress = walletAddress.toLowerCase();
     this.logger.log(`Wallet login attempt for address: ${walletAddress}`);
-  
+
     // ✅ Step 1: Check if walletAddress is listed as a legal representative
     const company = await this.companyRepository.findOne({
       where: { legalRepresentative: lowercaseAddress },
     });
-  
+
     if (!company) {
-      this.logger.warn(`Wallet ${walletAddress} is not a legal representative of any company.`);
+      this.logger.warn(
+        `Wallet ${walletAddress} is not a legal representative of any company.`,
+      );
       throw new UnauthorizedException('Unauthorized wallet address.');
     }
-  
+
     const nonce = this.nonces.get(lowercaseAddress);
     if (!nonce) {
       this.logger.warn(`Nonce not found for wallet: ${walletAddress}`);
-      throw new UnauthorizedException('Nonce not found. Please request a new one.');
+      throw new UnauthorizedException(
+        'Nonce not found. Please request a new one.',
+      );
     }
-  
-    this.logger.log(`Nonce found for wallet: ${walletAddress}, nonce: ${nonce}`);
-  
+
+    this.logger.log(
+      `Nonce found for wallet: ${walletAddress}, nonce: ${nonce}`,
+    );
+
     let recoveredAddress: string;
     try {
       recoveredAddress = ethers.utils.verifyMessage(
@@ -112,20 +118,25 @@ export class AuthService {
       );
       this.logger.log(`Recovered address from signature: ${recoveredAddress}`);
     } catch (err) {
-      this.logger.error(`Invalid signature for wallet: ${walletAddress}`, err.stack);
+      this.logger.error(
+        `Invalid signature for wallet: ${walletAddress}`,
+        err.stack,
+      );
       throw new UnauthorizedException('Invalid signature.');
     }
-  
+
     if (recoveredAddress.toLowerCase() !== lowercaseAddress) {
-      this.logger.warn(`Signature verification failed for wallet: ${walletAddress}`);
+      this.logger.warn(
+        `Signature verification failed for wallet: ${walletAddress}`,
+      );
       throw new UnauthorizedException('Signature verification failed');
     }
-  
+
     this.nonces.delete(lowercaseAddress);
     this.logger.log(`Nonce cleaned up for wallet: ${walletAddress}`);
-  
+
     const defaultTenantId = company.tenantId || 'wallet-' + lowercaseAddress;
-  
+
     const token = this.jwtService.sign(
       {
         walletAddress: lowercaseAddress,
@@ -134,13 +145,14 @@ export class AuthService {
       },
       { secret: 'secretKey', expiresIn: '5h' },
     );
-    this.logger.log(`Token generated for wallet: ${walletAddress}, role: company`);
-  
+    this.logger.log(
+      `Token generated for wallet: ${walletAddress}, role: company`,
+    );
+
     return {
       token,
       role: 'company',
       tenant_id: defaultTenantId,
     };
   }
-  
 }

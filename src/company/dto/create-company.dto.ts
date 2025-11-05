@@ -1,4 +1,14 @@
-import { IsString, IsEthereumAddress, IsOptional, IsEmail, MinLength, IsNotEmpty, IsInt, IsUrl, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEthereumAddress,
+  IsOptional,
+  IsEmail,
+  MinLength,
+  IsNotEmpty,
+  IsInt,
+  IsUrl,
+  Matches,
+} from 'class-validator';
 
 export class CreateCompanyDto {
   @IsNotEmpty()
@@ -50,5 +60,4 @@ export class CreateCompanyDto {
 
   @IsInt()
   stateID: number; // Company's state ID
-
-}  
+}

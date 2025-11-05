@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { User } from '../../users/users.entity';
 import { Invoice } from '../../invoice/entities/invoice.entity';
 
-
 @Entity('company') // Explicitly define table name
 export class Company {
   @PrimaryGeneratedColumn()
@@ -20,15 +19,14 @@ export class Company {
   @Column({ name: 'Legal_Representative', type: 'varchar', unique: true })
   legalRepresentative: string;
 
-  @Column({ type: 'text' })  // Matching VARCHAR(255)
+  @Column({ type: 'text' }) // Matching VARCHAR(255)
   image_url: string;
 
-  @Column({ length: 255 })  // Matching VARCHAR(255)
+  @Column({ length: 255 }) // Matching VARCHAR(255)
   image_id: string;
 
-
   @Column({ name: 'First_name', type: 'varchar' })
-  firstName: string;  
+  firstName: string;
 
   @Column({ name: 'Last_name', type: 'varchar' })
   lastName: string;
@@ -39,18 +37,22 @@ export class Company {
   @Column({ name: 'Password', type: 'varchar', nullable: true })
   password: string;
 
-  @Column({ name: 'categoryID', type: 'bigint', nullable: true,})
-  categoryID : number;
+  @Column({ name: 'categoryID', type: 'bigint', nullable: true })
+  categoryID: number;
 
   @Column({ name: 'address', type: 'varchar', nullable: true })
   address: string;
 
-  @Column({name: 'stateID', type: 'bigint', nullable: true})
-  stateID : number;
+  @Column({ name: 'stateID', type: 'bigint', nullable: true })
+  stateID: number;
 
-  @Column({ name: 'tenant_id', type: 'uuid', unique: true, default: () => 'uuid_generate_v4()' })
+  @Column({
+    name: 'tenant_id',
+    type: 'uuid',
+    unique: true,
+    default: () => 'uuid_generate_v4()',
+  })
   tenantId: string;
-
 
   @OneToMany(() => Invoice, (invoice) => invoice.seller)
   invoices: Invoice[];

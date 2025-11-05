@@ -1,10 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { IsString } from 'class-validator';
 import { IsNotEmpty, IsEthereumAddress } from 'class-validator';
 
 @Entity('customer')
 export class CreateCustomerDto {
-
   @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
 
@@ -38,7 +43,6 @@ export class CreateCustomerDto {
   @IsNotEmpty()
   @IsEthereumAddress({ message: 'Invalid Ethereum address' }) // Ensure valid blockchain address
   wallet_address: string;
-
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

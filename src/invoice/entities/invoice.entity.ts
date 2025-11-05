@@ -53,7 +53,7 @@ export class Invoice {
 
   @Column('json', { name: 'items' })
   items: {
-    serialNo: number,
+    serialNo: number;
     name: string;
     quantity: number;
     unitPrice: number;
@@ -76,6 +76,6 @@ export class Invoice {
   @Column({ name: 'is_claimed_for_itc', default: false })
   isClaimedForITC: boolean;
 
-  @OneToMany(() => ItcClaim, itcClaim => itcClaim.invoice)
+  @OneToMany(() => ItcClaim, (itcClaim) => itcClaim.invoice)
   itcClaims: ItcClaim[];
 }

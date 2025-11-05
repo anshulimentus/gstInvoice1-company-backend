@@ -3,13 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from '../company/entities/company.entity';
 
-
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-  ) { }
+  ) {}
 
   // Create a company user with hashed password
   async create(createCompanyDto: Partial<Company>): Promise<Company> {

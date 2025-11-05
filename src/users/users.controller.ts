@@ -6,16 +6,16 @@ import { Role } from './roles.enum';
 
 @Controller('users')
 export class UsersController {
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.User)
-    @Get('admin-data')
-    getAdminData(@Request() req) {
-      return `Welcome Admin ${req.user.username}`;
-    }
-  
-    @UseGuards(JwtAuthGuard)
-    @Get('profile')
-    getProfile(@Request() req) {
-      return req.user;
-    }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.User)
+  @Get('admin-data')
+  getAdminData(@Request() req) {
+    return `Welcome Admin ${req.user.username}`;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
+  }
 }

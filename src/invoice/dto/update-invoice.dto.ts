@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsNumber, IsDateString, IsBoolean, IsArray, ValidateNested, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsDateString,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsUUID,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class InvoiceItemDto {
@@ -46,7 +55,7 @@ export class UpdateInvoiceDto {
 
   @IsNumber()
   @IsOptional()
-  @Type(() => Number) 
+  @Type(() => Number)
   sellerId?: number;
 
   @IsArray()
@@ -67,11 +76,9 @@ export class UpdateInvoiceDto {
   @IsOptional()
   grandTotal?: number;
 
-
   @IsString()
   @IsOptional()
   paymentTerms?: string;
-
 
   @IsBoolean()
   @IsOptional()

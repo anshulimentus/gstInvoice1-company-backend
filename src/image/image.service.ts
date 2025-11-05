@@ -13,7 +13,7 @@ export class ImageService {
 
   async uploadImage(uploadImageDto: UploadImageDto): Promise<ImageEntity> {
     const { filename, base64data, mimeType } = uploadImageDto;
-    
+
     // Create a new image entity
     const newImage = this.imageRepository.create({
       filename,

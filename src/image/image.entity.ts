@@ -1,19 +1,24 @@
-    import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 
-    @Entity('images')
-    export class ImageEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+@Entity('images')
+export class ImageEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    filename: string;
+  @Column()
+  filename: string;
 
-    @Column({ name: 'base64data', type: 'text' })
-    base64data: string;
+  @Column({ name: 'base64data', type: 'text' })
+  base64data: string;
 
-    @Column({ name: 'mimetype' })
-    mimeType: string;
+  @Column({ name: 'mimetype' })
+  mimeType: string;
 
-    @CreateDateColumn({ name: 'uploadedat' })
-    uploadedAt: Date;
-    }
+  @CreateDateColumn({ name: 'uploadedat' })
+  uploadedAt: Date;
+}

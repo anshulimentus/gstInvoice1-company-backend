@@ -16,10 +16,9 @@ export class ItcClaim {
   @Column({ name: 'invoice_id' })
   invoiceId: string;
 
-  @ManyToOne(() => Invoice, invoice => invoice.itcClaims)
+  @ManyToOne(() => Invoice, (invoice) => invoice.itcClaims)
   @JoinColumn({ name: 'invoice_id' })
   invoice: Invoice;
-  
 
   @Column({ name: 'company_id' })
   companyId: string;

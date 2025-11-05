@@ -1,8 +1,17 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, IsBoolean, IsArray, ValidateNested, IsUUID, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsDateString,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsUUID,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class InvoiceItemDto {
-
   @IsNumber()
   @IsNotEmpty()
   serialNo: number;
@@ -39,7 +48,7 @@ export class CreateInvoiceDto {
   @IsString()
   @IsNotEmpty()
   supplyType: string;
-  
+
   @IsUUID()
   @IsNotEmpty()
   buyerId: string;

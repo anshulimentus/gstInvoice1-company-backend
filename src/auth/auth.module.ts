@@ -12,17 +12,16 @@ import { Company } from '../company/entities/company.entity';
 @Module({
   imports: [
     UsersModule,
-    PassportModule, 
+    PassportModule,
     TypeOrmModule.forFeature([Company]), // or import CompanyModule if it's already exported
     CompanyModule,
     JwtModule.register({
-      secret: 'secretKey', 
+      secret: 'secretKey',
       signOptions: { expiresIn: '24h' }, // Token expiration time
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService, JwtStrategy, JwtModule], // Export AuthService for use in other modules
-
 })
 export class AuthModule {}

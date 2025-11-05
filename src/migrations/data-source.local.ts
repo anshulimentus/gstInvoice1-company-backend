@@ -15,7 +15,16 @@ export const AppDataSourceLocal = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   ssl: false, // Disable SSL for local development
-  entities: [Product, Customer, User, ImageEntity, State, Company, Invoice, ItcClaim],
+  entities: [
+    Product,
+    Customer,
+    User,
+    ImageEntity,
+    State,
+    Company,
+    Invoice,
+    ItcClaim,
+  ],
   migrations: [__dirname + '/*.ts'],
   synchronize: false,
   logging: true,

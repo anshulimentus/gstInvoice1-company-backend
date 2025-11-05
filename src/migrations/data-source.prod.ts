@@ -15,7 +15,16 @@ export const AppDataSourceProd = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }, // Enable SSL for production
-  entities: [Product, Customer, User, ImageEntity, State, Company, Invoice, ItcClaim],
+  entities: [
+    Product,
+    Customer,
+    User,
+    ImageEntity,
+    State,
+    Company,
+    Invoice,
+    ItcClaim,
+  ],
   migrations: [__dirname + '/*.ts'],
   synchronize: false,
   logging: false, // Disable logging in production

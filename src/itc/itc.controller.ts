@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Req, UseGuards, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseGuards,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ItcService } from './itc.service';
@@ -18,13 +26,13 @@ export class ItcController {
       const result = await this.itcService.claimForCompany(user);
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -40,7 +48,7 @@ export class ItcController {
       const result = await this.itcService.getSummaryForCompany(user);
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       return {
@@ -53,8 +61,8 @@ export class ItcController {
           totalClaimable: 0,
           netITC: 0,
           claimCount: 0,
-          claims: []
-        }
+          claims: [],
+        },
       };
     }
   }
@@ -70,13 +78,13 @@ export class ItcController {
       const result = await this.itcService.getDetailedItcAnalysis(user);
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -94,18 +102,18 @@ export class ItcController {
         return {
           success: false,
           message: 'No ITC claims found for this company.',
-          data: []
+          data: [],
         };
       }
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
-        data: []
+        data: [],
       };
     }
   }
@@ -119,16 +127,19 @@ export class ItcController {
     try {
       const user = req.user;
       const yearNum = parseInt(year) || new Date().getFullYear();
-      const result = await this.itcService.getMonthlyItcBreakdown(user, yearNum);
+      const result = await this.itcService.getMonthlyItcBreakdown(
+        user,
+        yearNum,
+      );
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -142,16 +153,19 @@ export class ItcController {
     try {
       const user = req.user;
       const currentYear = new Date().getFullYear();
-      const result = await this.itcService.getMonthlyItcBreakdown(user, currentYear);
+      const result = await this.itcService.getMonthlyItcBreakdown(
+        user,
+        currentYear,
+      );
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       return {
         success: false,
         message: error.message,
-        error: error.message
+        error: error.message,
       };
     }
   }
