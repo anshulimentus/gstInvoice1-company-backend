@@ -51,4 +51,7 @@ export class Customer {
 
   @Column({ type: 'uuid' }) // Store the tenantId from Company
   company_tenant_id: string;
+
+  @Column({ type: 'int', nullable: true })
+  blockchainCustomerId: number;
 }

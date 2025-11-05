@@ -28,7 +28,8 @@ async function bootstrap() {
       // "http://localhost:5174",
       "https://gst-invoice-company-frontend-git-main-anshuls-projects-1ad701d0.vercel.app",
       // 'https://gst-invoice-company-frontend-git-main-anshuls-projects-1ad701d0.vercel.app',
-      "http://localhost:5173"
+      "http://localhost:5173",
+      "http://localhost:5174"
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders: ["Content-Type", 'Authorization', 'x-tenant-id'],

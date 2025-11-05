@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Query, Post, Patch, Delete, UseGuards, InternalServerErrorException, BadRequestException, NotAcceptableException, Param, ParseIntPipe } from "@nestjs/common";
+import { Controller, Get, Body, Query, Post, Patch, Delete, UseGuards, InternalServerErrorException, BadRequestException, NotAcceptableException, Param, ParseIntPipe, Request } from "@nestjs/common";
 import { ProductService } from "./product.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
@@ -15,9 +15,20 @@ export class ProductController {
     @Post('add')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.User)
-    async create(@Body() createProductDto: CreateProductDto) {
+    async create(@Body() createProductDto: CreateProductDto, @Request() req: any) {
         // console.log(chalk.bgCyanBright("🚀 Create Product router hit...."));
+        // Execute transaction immediately on backend using server's private key
         return this.productService.create(createProductDto)
+    }
+
+    @Post('complete-create/:tempProductId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.User)
+    async completeCreate(
+        @Param('tempProductId', ParseIntPipe) tempProductId: number,
+        @Body() body: { signedTx: string, productData: CreateProductDto }
+    ) {
+        return this.productService.completeCreate(tempProductId, body.signedTx, body.productData);
     }
 
     @Get('demo')
@@ -89,5 +100,12 @@ export class ProductController {
         return this.productService.remove(id);
     }
 
-}
+    @Get('consistency-check')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.User)
+    async checkConsistency() {
+        console.log(chalk.bgCyan("🔍 Running blockchain consistency check..."));
+        return this.productService.checkBlockchainConsistency();
+    }
 
+}

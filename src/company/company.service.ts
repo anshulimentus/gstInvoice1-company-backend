@@ -26,7 +26,7 @@ export class CompanyService {
         if (!process.env.PROVIDER_URL) {
             throw new Error('PROVIDER_URL is not set in environment variables');
         }
-        if (!process.env.COMPANY_CONTRACT_ADDRESS) {
+        if (!process.env.CONTRACT_ADDRESS) {
             throw new Error('CONTRACT_ADDRESS is not set in environment variables');
         }
         if (!process.env.PRIVATE_KEY) {
@@ -37,7 +37,7 @@ export class CompanyService {
         }
 
         this.providerURL = process.env.PROVIDER_URL;
-        this.contractAddress = process.env.COMPANY_CONTRACT_ADDRESS;
+        this.contractAddress = process.env.CONTRACT_ADDRESS;
         this.privateKey = process.env.PRIVATE_KEY;
         this.ownerAddress = process.env.OWNER_ADDRESS;
 

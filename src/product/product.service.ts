@@ -2,9 +2,10 @@ import { Injectable, NotFoundException, BadRequestException, InternalServerError
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Product } from "./entities/product.entity";
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
+import { CONTRACT_ABI } from '../abi/contract.abi';
 import * as chalk from "chalk";
 
 @Injectable()
@@ -27,7 +28,7 @@ export class ProductService {
         if (!process.env.PROVIDER_URL) {
             throw new Error('PROVIDER_URL is not set in environment variables');
         }
-        if (!process.env.PRODUCT_CONTRACT_ADDRESS) {
+        if (!process.env.CONTRACT_ADDRESS) {
             throw new Error('CONTRACT_ADDRESS is not set in environment variables');
         }
         if (!process.env.PRIVATE_KEY) {
@@ -38,178 +39,14 @@ export class ProductService {
         }
 
         this.providerURL = process.env.PROVIDER_URL;
-        this.contractAddress = process.env.PRODUCT_CONTRACT_ADDRESS;
+        this.contractAddress = process.env.CONTRACT_ADDRESS;
         this.privateKey = process.env.PRIVATE_KEY;
-      
+
 
         // Sepholia RPC URL
         this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerURL));
-        this.contract = new this.web3.eth.Contract([
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductDeleted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductUpdated",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "addProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "deleteProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "products",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalProducts",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "updateProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }
-        ], this.contractAddress);
+
+        this.contract = new this.web3.eth.Contract(CONTRACT_ABI, this.contractAddress);
         const sanitizedPrivateKey = this.privateKey.startsWith("0x")
         ? this.privateKey
         : "0x" + this.privateKey;
@@ -228,33 +65,178 @@ export class ProductService {
 
     }
 
+    // Prepare transaction data for frontend signing
+    async prepareTransaction(encodedABI: string, fromAddress: string): Promise<any> {
+        const nonce = await this.web3.eth.getTransactionCount(fromAddress, "latest");
+        const gasPrice = await this.web3.eth.getGasPrice();
 
+        const txData = {
+            to: this.contractAddress,
+            data: encodedABI,
+            gas: 500000,
+            gasPrice: gasPrice.toString(),
+            nonce: nonce.toString(),
+            chainId: 11155111, // Sepolia testnet
+        };
 
-    async create(createProductDto: CreateProductDto): Promise<Product> {
-        // console.log("🚀 ~ ProductService ~ create ~ createProductDto:", createProductDto)
+        return txData;
+    }
+
+    // Send signed transaction received from frontend
+    async sendSignedTransaction(signedTx: string): Promise<any> {
+        try {
+            return await this.web3.eth.sendSignedTransaction(signedTx);
+        } catch (error) {
+            console.error('Error sending signed transaction:', error);
+            throw new InternalServerErrorException('Failed to send signed transaction');
+        }
+    }
+
+    async prepareCreate(createProductDto: CreateProductDto, walletAddress?: string): Promise<{ transactionData: any, productData: any }> {
+        // Validate GST rate according to contract requirements
+        const gstRate = Math.round(createProductDto.gstRate);
+        if (gstRate <= 0 || gstRate > 100) {
+            throw new BadRequestException('GST rate must be between 1 and 100');
+        }
+
         // Convert price to smallest unit (e.g., paise, cents)
         const onChainPrice = Math.round(createProductDto.unitPrice);
 
-        // Step 1: Save to DB first to get auto-generated productID
+        // Create product data (don't save to DB yet)
         const newProduct = this.productRepository.create({
             ...createProductDto,
             unitPrice: onChainPrice, // Save in smallest unit for consistency
         });
-        const savedProduct = await this.productRepository.save(newProduct);
 
-        // Step 2: Call blockchain transaction with the productID from DB
-        const tx = await this.contract.methods
-        .addProduct(
-            savedProduct.productID,
-            savedProduct.productName,
-            savedProduct.unitPrice
-        )
-        .send({ from: this.account });
-        
-        console.log("🚀 ~ ProductService ~ create ~ tx:", tx)
-        // Step 3: Save the transaction hash back to DB
-        savedProduct.transactionHash = tx.transactionHash;
-        await this.productRepository.save(savedProduct);
+        // Prepare transaction data for frontend signing
+        const encodedABI = this.contract.methods
+            .addProduct(createProductDto.productName, onChainPrice, gstRate)
+            .encodeABI();
+
+        const transactionData = await this.prepareTransaction(encodedABI, walletAddress || this.account);
+
+        return {
+            transactionData,
+            productData: {
+                ...newProduct,
+                tempProductId: Date.now() // Temporary ID for tracking
+            }
+        };
+    }
+
+    // Complete the creation after receiving signed transaction from frontend
+    async completeCreate(tempProductId: number, signedTx: string, productData: CreateProductDto): Promise<Product> {
+        const receipt = await this.sendSignedTransaction(signedTx);
+        console.log("🚀 ~ ProductService ~ completeCreate ~ tx:", receipt);
+
+        // Get the blockchain product ID from the ProductAdded event
+        let blockchainProductId: number;
+        try {
+            if (receipt.events && receipt.events.ProductAdded) {
+                blockchainProductId = parseInt(receipt.events.ProductAdded.returnValues.productID);
+                console.log("🔢 Blockchain Product ID (from event):", blockchainProductId);
+            } else {
+                // Fallback: query totalProducts if event is not available
+                const totalProducts = await this.contract.methods.totalProducts().call();
+                blockchainProductId = parseInt(totalProducts.toString());
+                console.log("🔢 Blockchain Product ID (fallback from totalProducts):", blockchainProductId);
+            }
+        } catch (error) {
+            console.error("❌ Could not get blockchain product ID:", error);
+            throw new InternalServerErrorException('Failed to get blockchain product ID');
+        }
+
+        // Save product to database with transaction hash and blockchain product ID
+        const newProduct = this.productRepository.create({
+            ...productData,
+            transactionHash: receipt.transactionHash, // Include transaction hash
+            blockchainProductId: blockchainProductId, // Include blockchain product ID
+        });
+
+        const savedProduct = await this.productRepository.save(newProduct);
+        console.log("✅ Product saved to database with transaction hash:", receipt.transactionHash);
+
+        return savedProduct;
+    }
+
+    async create(createProductDto: CreateProductDto): Promise<Product> {
+        // console.log("🚀 ~ ProductService ~ create ~ createProductDto:", createProductDto)
+
+        // Validate GST rate according to contract requirements
+        const gstRate = Math.round(createProductDto.gstRate);
+        if (gstRate <= 0 || gstRate > 100) {
+            throw new BadRequestException('GST rate must be between 1 and 100');
+        }
+
+        // Convert price to smallest unit (e.g., paise, cents)
+        const onChainPrice = Math.round(createProductDto.unitPrice);
+
+        // Step 1: BLOCKCHAIN FIRST - Call blockchain transaction
+        // Contract expects: addProduct(string _name, uint256 _basePrice, uint256 _gstRate)
+        let tx;
+        let blockchainProductId: number;
+        try {
+            console.log("🔗 Executing blockchain transaction...");
+            console.log("📋 Parameters:", {
+                name: createProductDto.productName,
+                price: onChainPrice,
+                gstRate: gstRate,
+                from: this.account,
+                contract: this.contractAddress
+            });
+
+            tx = await this.contract.methods
+            .addProduct(
+                createProductDto.productName,  // _name
+                onChainPrice,                  // _basePrice
+                gstRate                        // _gstRate (validated)
+            )
+            .send({
+                from: this.account,
+                gas: 300000,
+                gasPrice: '20000000000' // 20 gwei
+            });
+
+            console.log("✅ Blockchain transaction successful:", tx.transactionHash);
+            console.log("📋 Transaction receipt:", tx);
+
+            // Get the blockchain product ID from the ProductAdded event
+            try {
+                if (tx.events && tx.events.ProductAdded) {
+                    blockchainProductId = parseInt(tx.events.ProductAdded.returnValues.productID);
+                    console.log("🔢 Blockchain Product ID (from event):", blockchainProductId);
+                    console.log("📋 ProductAdded event:", tx.events.ProductAdded.returnValues);
+                } else {
+                    // Fallback: query totalProducts if event is not available
+                    const totalProducts = await this.contract.methods.totalProducts().call();
+                    blockchainProductId = parseInt(totalProducts.toString());
+                    console.log("🔢 Blockchain Product ID (fallback from totalProducts):", blockchainProductId);
+                }
+            } catch (error) {
+                console.error("❌ Could not get blockchain product ID:", error);
+                throw new InternalServerErrorException('Failed to get blockchain product ID');
+            }
+        } catch (error) {
+            // If blockchain transaction fails, don't save to database
+            console.error("❌ Blockchain transaction failed:", error);
+            console.error("Error details:", {
+                message: error.message,
+                code: error.code,
+                data: error.data
+            });
+            throw new BadRequestException('Blockchain transaction failed: ' + error.message);
+        }
+
+        // Step 2: Only save to database AFTER blockchain success
+        const newProduct = this.productRepository.create({
+            ...createProductDto,
+            unitPrice: onChainPrice, // Save in smallest unit for consistency
+            transactionHash: tx.transactionHash, // Include transaction hash
+            blockchainProductId: blockchainProductId, // Store blockchain ID
+        });
+
+        const savedProduct = await this.productRepository.save(newProduct);
+        console.log("✅ Product saved to database with transaction hash:", tx.transactionHash);
 
         return savedProduct;
     }
@@ -308,41 +290,171 @@ export class ProductService {
 
 
     async update(id: number, updateProductDto: UpdateProductDto): Promise<Product> {
-        const updatedProduct = await this.productRepository.preload({
-            productID: id,
-            ...updateProductDto,
-        });
-
-        if (!updatedProduct) {
-            throw new Error(`Product with ID ${id} not found`);
+        // First check if product exists
+        const existingProduct = await this.productRepository.findOne({ where: { productID: id } });
+        if (!existingProduct) {
+            throw new NotFoundException(`Product with ID ${id} not found`);
         }
 
-        await this.productRepository.save(updatedProduct);
+        // Validate GST rate according to contract requirements
+        const gstRate = Math.round(updateProductDto.gstRate ?? existingProduct.gstRate);
+        if (gstRate <= 0 || gstRate > 100) {
+            throw new BadRequestException('GST rate must be between 1 and 100');
+        }
 
-        await this.contract.methods
-            .updateProduct(updatedProduct.productID, updatedProduct.productName, updatedProduct.unitPrice)
-            .send({ from: this.account });
+        // IMPORTANT: BLOCKCHAIN TRANSACTION OCCURS FIRST
+        // Step 1: Execute blockchain transaction BEFORE making any database changes
+        let updateTx;
+        try {
+            console.log("🔗 Executing blockchain update transaction first...");
+            updateTx = await this.contract.methods
+                .updateProduct(
+                    existingProduct.blockchainProductId,        // _id (use blockchain product ID)
+                    updateProductDto.productName ?? existingProduct.productName,   // _name
+                    Math.round(updateProductDto.unitPrice ?? existingProduct.unitPrice), // _basePrice
+                    gstRate                                     // _gstRate (validated)
+                )
+                .send({ from: this.account });
 
-        // console.log("🚀 Exiting updating method")
-        return updatedProduct;
+            console.log("✅ Product updated on blockchain with blockchainProductId:", existingProduct.blockchainProductId);
+            console.log("📋 Full updateTx object keys:", Object.keys(updateTx));
+            console.log("📋 Full updateTx object:", JSON.stringify(updateTx, null, 2));
+            console.log("📋 Update transaction hash:", updateTx?.transactionHash);
+            console.log("📋 Update transaction hash (direct):", updateTx.transactionHash);
 
+            // Try different ways to get transaction hash
+            let transactionHash = updateTx.transactionHash;
+            if (!transactionHash && updateTx.transactionHash) {
+                transactionHash = updateTx.transactionHash;
+            }
+            if (!transactionHash && updateTx.hash) {
+                transactionHash = updateTx.hash;
+            }
+
+            console.log("📋 Final extracted transaction hash:", transactionHash);
+            updateTx.transactionHash = transactionHash; // Ensure it's set
+        } catch (error) {
+            // CRITICAL: If blockchain transaction fails, ABORT and don't touch the database
+            console.error("❌ Blockchain update failed - aborting database update:", error);
+            throw new BadRequestException('Blockchain update failed: ' + error.message);
+        }
+
+        // Step 2: ONLY AFTER blockchain success, update the database
+        console.log("💾 Blockchain transaction successful - now updating database...");
+        console.log("📋 Update transaction result keys:", Object.keys(updateTx));
+        console.log("📋 Update transaction result:", JSON.stringify(updateTx, null, 2));
+        console.log("📋 Transaction hash from blockchain:", updateTx.transactionHash);
+        console.log("📋 Transaction hash exists:", !!updateTx.transactionHash);
+
+        // Update the existing product entity with new data and transaction hash
+        console.log("📋 Old transaction hash in DB:", existingProduct.transactionHash);
+        const newTransactionHash = updateTx.transactionHash;
+        console.log("📋 New transaction hash to be set:", newTransactionHash);
+
+        // Explicitly set the transaction hash
+        existingProduct.transactionHash = newTransactionHash;
+        console.log("📋 Transaction hash after setting on entity:", existingProduct.transactionHash);
+
+        // Apply other updates from DTO
+        if (updateProductDto.productName !== undefined) {
+            existingProduct.productName = updateProductDto.productName;
+        }
+        if (updateProductDto.gstRate !== undefined) {
+            existingProduct.gstRate = updateProductDto.gstRate;
+        }
+        if (updateProductDto.productDescription !== undefined) {
+            existingProduct.productDescription = updateProductDto.productDescription;
+        }
+        if (updateProductDto.image_url !== undefined) {
+            existingProduct.image_url = updateProductDto.image_url;
+        }
+        if (updateProductDto.image_id !== undefined) {
+            existingProduct.image_id = updateProductDto.image_id;
+        }
+        if (updateProductDto.service !== undefined) {
+            existingProduct.service = updateProductDto.service;
+        }
+        if (updateProductDto.unitPrice !== undefined) {
+            existingProduct.unitPrice = updateProductDto.unitPrice;
+        }
+
+        console.log("📋 Saving product to database...");
+        const savedProduct = await this.productRepository.save(existingProduct);
+        console.log("✅ Database updated successfully after blockchain transaction");
+        console.log("📋 Final transaction hash in saved product:", savedProduct.transactionHash);
+        return savedProduct;
     }
 
 
     async remove(id: number): Promise<void> {
-        try {
-            // Step 1: Delete from Blockchain
-            const receipt = await this.contract.methods.deleteProduct(id).send({ from: this.account });
-
-            // console.log('Transaction successful:', receipt.transactionHash);
-
-            // Step 2: Delete from Database (after blockchain transaction success)  
-            await this.productRepository.delete(id);
-
-            // console.log(`Product with ID ${id} deleted from database`);
-        } catch (error) {
-            // console.error(`Error deleting product with ID ${id}:`, error);
-            throw new Error('Failed to delete product');
+        // First check if product exists
+        const existingProduct = await this.productRepository.findOne({ where: { productID: id } });
+        if (!existingProduct) {
+            throw new NotFoundException(`Product with ID ${id} not found`);
         }
+
+        // IMPORTANT: BLOCKCHAIN TRANSACTION OCCURS FIRST
+        // Step 1: Execute blockchain transaction BEFORE making any database changes
+        try {
+            console.log("🔗 Executing blockchain delete transaction first...");
+            console.log("📋 Attempting to delete product with blockchainProductId:", existingProduct.blockchainProductId);
+            console.log("📋 Database productID:", existingProduct.productID);
+
+            const receipt = await this.contract.methods.deleteProduct(existingProduct.blockchainProductId).send({ from: this.account });
+            console.log('✅ Product deleted from blockchain with blockchainProductId:', existingProduct.blockchainProductId, 'transaction:', receipt.transactionHash);
+        } catch (error) {
+            // CRITICAL: If blockchain transaction fails, ABORT and don't touch the database
+            console.error("❌ Blockchain delete failed - aborting database deletion:", error);
+            console.error("❌ Error details:", {
+                message: error.message,
+                code: error.code,
+                data: error.data
+            });
+
+            // Check if this is a "Product not found" error from the contract
+            if (error.message && error.message.includes('Product')) {
+                console.error("❌ Product not found on blockchain - possible data inconsistency");
+                console.error("❌ Database has product but blockchain doesn't - manual cleanup may be needed");
+                console.error("💡 Suggestion: Check if this product was created before blockchainProductId was implemented");
+                console.error("💡 Or verify that the blockchainProductId value is correct");
+            }
+
+            throw new BadRequestException('Blockchain delete failed: ' + error.message);
+        }
+
+        // Step 2: ONLY AFTER blockchain success, delete from the database
+        console.log("💾 Blockchain transaction successful - now deleting from database...");
+        await this.productRepository.delete(id);
+        console.log(`✅ Product with ID ${id} deleted from database after blockchain transaction`);
+    }
+
+    // Method to check data consistency between database and blockchain
+    async checkBlockchainConsistency(): Promise<{ consistent: Product[], inconsistent: Product[] }> {
+        console.log("🔍 Checking data consistency between database and blockchain...");
+
+        const allProducts = await this.productRepository.find();
+        const consistent: Product[] = [];
+        const inconsistent: Product[] = [];
+
+        for (const product of allProducts) {
+            try {
+                // Try to get product data from blockchain
+                const blockchainProduct = await this.contract.methods.products(product.blockchainProductId).call();
+
+                if (blockchainProduct && blockchainProduct.productID) {
+                    console.log(`✅ Product ${product.productID} (blockchain ID: ${product.blockchainProductId}) exists on blockchain`);
+                    consistent.push(product);
+                } else {
+                    console.log(`❌ Product ${product.productID} (blockchain ID: ${product.blockchainProductId}) not found on blockchain`);
+                    inconsistent.push(product);
+                }
+            } catch (error) {
+                console.log(`❌ Error checking product ${product.productID} (blockchain ID: ${product.blockchainProductId}):`, error.message);
+                inconsistent.push(product);
+            }
+        }
+
+        console.log(`📊 Consistency check complete: ${consistent.length} consistent, ${inconsistent.length} inconsistent`);
+        return { consistent, inconsistent };
     }
 }

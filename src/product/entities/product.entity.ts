@@ -30,6 +30,8 @@ export class Product {
     @Column({ length: 255, nullable: true })  // New service column
     service: string;
 
+    @Column({ type: 'int' })  // Blockchain product ID
+    blockchainProductId: number;
 
     // here i have change
     @Column({ type: 'uuid' }) // Store the tenantId from Company

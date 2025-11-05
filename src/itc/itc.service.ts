@@ -24,7 +24,7 @@ export class ItcService {
     if (!process.env.PROVIDER_URL) {
       throw new Error('PROVIDER_URL is not set in environment variables');
     }
-    if (!process.env.ITC_CONTRACT_ADDRESS) {
+    if (!process.env.CONTRACT_ADDRESS) {
       throw new Error('CONTRACT_ADDRESS is not set in environment variables');
     }
     if (!process.env.PRIVATE_KEY) {
@@ -35,7 +35,7 @@ export class ItcService {
     }
 
     this.providerURL = process.env.PROVIDER_URL;
-    this.contractAddress = process.env.ITC_CONTRACT_ADDRESS;
+    this.contractAddress = process.env.CONTRACT_ADDRESS;
     this.privateKey = process.env.PRIVATE_KEY;
 
     // Initialize Web3 with the provider URL

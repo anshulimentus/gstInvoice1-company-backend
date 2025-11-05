@@ -10,6 +10,7 @@ import * as PDFDocument from 'pdfkit';
 import * as chalk from 'chalk';
 import { info } from 'console';
 import { Customer } from 'src/customer/entities/customer.entity';
+import { CONTRACT_ABI } from 'src/abi/contract.abi';
 
 @Injectable()
 export class InvoiceService {
@@ -20,18 +21,17 @@ export class InvoiceService {
     private privateKey: string;
     private providerURL: string;
 
-
     constructor(
         @InjectRepository(Invoice)
         private invoiceRepository: Repository<Invoice>,
-        @InjectRepository(Customer)  // ✅ Add this decorator
+        @InjectRepository(Customer)
         private customerRepository: Repository<Customer>,
     ) {
         // Validate environment variables
         if (!process.env.PROVIDER_URL) {
             throw new Error('PROVIDER_URL is not set in environment variables');
         }
-        if (!process.env.INVOICE_CONTRACT_ADDRESS) {
+        if (!process.env.CONTRACT_ADDRESS) {
             throw new Error('CONTRACT_ADDRESS is not set in environment variables');
         }
         if (!process.env.PRIVATE_KEY) {
@@ -42,1427 +42,18 @@ export class InvoiceService {
         }
 
         this.providerURL = process.env.PROVIDER_URL;
-        this.contractAddress = process.env.INVOICE_CONTRACT_ADDRESS;
+        this.contractAddress = process.env.CONTRACT_ADDRESS;
         this.privateKey = process.env.PRIVATE_KEY;
 
         // Initialize Web3 connection
         this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerURL));
-        this.contract = new this.web3.eth.Contract([
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "companyId",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "address",
-                        "name": "walletAddress",
-                        "type": "address"
-                    }
-                ],
-                "name": "CompanyRegistered",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "CustomerAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    }
-                ],
-                "name": "CustomerDeleted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "CustomerUpdated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "string",
-                        "name": "companyId",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "claimableAmount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ITCApproved",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "string",
-                        "name": "companyId",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "address",
-                        "name": "claimedBy",
-                        "type": "address"
-                    }
-                ],
-                "name": "ITCClaimed",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "string",
-                        "name": "companyId",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "inputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "outputGST",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ITCRecordCreated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "string",
-                        "name": "companyId",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "reason",
-                        "type": "string"
-                    }
-                ],
-                "name": "ITCRejected",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "InvoiceCreated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "InvoiceDeleted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "InvoiceUpdated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductDeleted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductUpdated",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_id",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "addCustomer",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "addProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "allCompanies",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "approveITC",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string[]",
-                        "name": "_invoiceNumbers",
-                        "type": "string[]"
-                    }
-                ],
-                "name": "bulkClaimITC",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "claimITC",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "companyInvoices",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "name": "companySummary",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "totalInputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalOutputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalClaimableITC",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalClaimedITC",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "pendingITC",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "recordCount",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_companyId",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "_companyWallet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_inputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_outputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "_isApproved",
-                        "type": "bool"
-                    }
-                ],
-                "name": "createITCRecord",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceDate",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_supplyType",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_productIDs",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "string[]",
-                        "name": "_productNames",
-                        "type": "string[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_quantities",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_unitPrices",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_gstRates",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_totalAmounts",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_totalTaxableValue",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_totalGstAmount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_grandTotal",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_paymentTerms",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "_isFinal",
-                        "type": "bool"
-                    }
-                ],
-                "name": "createInvoice",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "name": "customers",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_id",
-                        "type": "string"
-                    }
-                ],
-                "name": "deleteCustomer",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "deleteInvoice",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "deleteProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getAllCompanies",
-                "outputs": [
-                    {
-                        "internalType": "string[]",
-                        "name": "",
-                        "type": "string[]"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getAllInvoices",
-                "outputs": [
-                    {
-                        "components": [
-                            {
-                                "internalType": "string",
-                                "name": "invoiceNumber",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "invoiceDate",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "supplyType",
-                                "type": "string"
-                            },
-                            {
-                                "components": [
-                                    {
-                                        "internalType": "uint256",
-                                        "name": "productID",
-                                        "type": "uint256"
-                                    },
-                                    {
-                                        "internalType": "string",
-                                        "name": "productName",
-                                        "type": "string"
-                                    },
-                                    {
-                                        "internalType": "uint256",
-                                        "name": "quantity",
-                                        "type": "uint256"
-                                    },
-                                    {
-                                        "internalType": "uint256",
-                                        "name": "unitPrice",
-                                        "type": "uint256"
-                                    },
-                                    {
-                                        "internalType": "uint256",
-                                        "name": "gstRate",
-                                        "type": "uint256"
-                                    },
-                                    {
-                                        "internalType": "uint256",
-                                        "name": "totalAmount",
-                                        "type": "uint256"
-                                    }
-                                ],
-                                "internalType": "struct Company.InvoiceItem[]",
-                                "name": "items",
-                                "type": "tuple[]"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalTaxableValue",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalGstAmount",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "grandTotal",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "paymentTerms",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "bool",
-                                "name": "isFinal",
-                                "type": "bool"
-                            }
-                        ],
-                        "internalType": "struct Company.Invoice[]",
-                        "name": "",
-                        "type": "tuple[]"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_companyId",
-                        "type": "string"
-                    }
-                ],
-                "name": "getClaimableITCs",
-                "outputs": [
-                    {
-                        "internalType": "string[]",
-                        "name": "",
-                        "type": "string[]"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "getCompanyByWallet",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_companyId",
-                        "type": "string"
-                    }
-                ],
-                "name": "getCompanyInvoices",
-                "outputs": [
-                    {
-                        "internalType": "string[]",
-                        "name": "",
-                        "type": "string[]"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_companyId",
-                        "type": "string"
-                    }
-                ],
-                "name": "getCompanySummary",
-                "outputs": [
-                    {
-                        "components": [
-                            {
-                                "internalType": "uint256",
-                                "name": "totalInputGST",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalOutputGST",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalClaimableITC",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalClaimedITC",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "pendingITC",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "recordCount",
-                                "type": "uint256"
-                            }
-                        ],
-                        "internalType": "struct Company.ITCSummary",
-                        "name": "",
-                        "type": "tuple"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "getITCRecord",
-                "outputs": [
-                    {
-                        "components": [
-                            {
-                                "internalType": "string",
-                                "name": "invoiceNumber",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "companyId",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "address",
-                                "name": "companyWallet",
-                                "type": "address"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "inputGST",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "outputGST",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "netITC",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "claimableAmount",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "claimedAmount",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "timestamp",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "bool",
-                                "name": "isApproved",
-                                "type": "bool"
-                            },
-                            {
-                                "internalType": "bool",
-                                "name": "isClaimed",
-                                "type": "bool"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "status",
-                                "type": "string"
-                            }
-                        ],
-                        "internalType": "struct Company.ITCRecord",
-                        "name": "",
-                        "type": "tuple"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "getInvoiceByNumber",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    },
-                    {
-                        "components": [
-                            {
-                                "internalType": "uint256",
-                                "name": "productID",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "productName",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "quantity",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "unitPrice",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "gstRate",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "totalAmount",
-                                "type": "uint256"
-                            }
-                        ],
-                        "internalType": "struct Company.InvoiceItem[]",
-                        "name": "",
-                        "type": "tuple[]"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_companyId",
-                        "type": "string"
-                    }
-                ],
-                "name": "getTotalClaimableAmount",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "name": "itcRecords",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "companyId",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "companyWallet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "inputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "outputGST",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "netITC",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "claimableAmount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "claimedAmount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "timestamp",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "isApproved",
-                        "type": "bool"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "isClaimed",
-                        "type": "bool"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "status",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "nextCustomerId",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "products",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_companyId",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "_walletAddress",
-                        "type": "address"
-                    }
-                ],
-                "name": "registerCompany",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_reason",
-                        "type": "string"
-                    }
-                ],
-                "name": "rejectITC",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalITCClaims",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalInvoices",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalProducts",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_id",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "updateCustomer",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceDate",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_supplyType",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_productIDs",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "string[]",
-                        "name": "_productNames",
-                        "type": "string[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_quantities",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_unitPrices",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_gstRates",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256[]",
-                        "name": "_totalAmounts",
-                        "type": "uint256[]"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_totalTaxableValue",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_totalGstAmount",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_grandTotal",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_paymentTerms",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "_isFinal",
-                        "type": "bool"
-                    }
-                ],
-                "name": "updateInvoice",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "updateProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_invoiceNumber",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_status",
-                        "type": "string"
-                    }
-                ],
-                "name": "updateRecordStatus",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "walletToCompany",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }
-        ], this.contractAddress);
+        this.contract = new this.web3.eth.Contract(CONTRACT_ABI, this.contractAddress);
 
         const sanitizedPrivateKey = this.privateKey.startsWith("0x")
-        ? this.privateKey
-        : "0x" + this.privateKey;
+            ? this.privateKey
+            : "0x" + this.privateKey;
         console.log("🚀 ~ InvoiceService ~ sanitizedPrivateKey:", sanitizedPrivateKey)
-        
+
         try {
             const account = this.web3.eth.accounts.privateKeyToAccount(sanitizedPrivateKey);
             this.account = account.address;
@@ -1646,7 +237,6 @@ export class InvoiceService {
         }
     }
 
-
     async createInvoice(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
         try {
             const {
@@ -1666,7 +256,6 @@ export class InvoiceService {
             // console.log('🚀 Received invoice DTO:', createInvoiceDto);
 
             // 1. Check if invoice already exists on-chain
-
 
             // 2. Extract parallel arrays from items
             const productIDs: number[] = [];
@@ -1714,19 +303,7 @@ export class InvoiceService {
             const tx = await this.contract.methods
                 .createInvoice(
                     invoiceNo,
-                    invoiceDate,
-                    supplyType,
-                    productIDs,
-                    productNames,
-                    quantities,
-                    unitPrices,
-                    gstRates,
-                    totalAmounts,
-                    totalTaxableValue,
-                    totalGstAmount,
-                    grandTotal,
-                    paymentTerms,
-                    isFinal
+                    Math.floor(grandTotal * 100) // Convert to smallest unit (cents/paise)
                 )
                 .send({
                     from: this.account,
@@ -1770,30 +347,6 @@ export class InvoiceService {
             throw new Error(`Invoice creation failed: ${error.message}`);
         }
     }
-
-
-
-    // async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
-    //     const invoices = await this.invoiceRepository.find({
-    //         where: {
-    //             seller: {
-    //                 tenantId: tenantId,
-    //             },
-    //         },
-    //         relations: ['seller', 'buyer'], // ensures seller and buyer are fetched
-    //         order: {
-    //             createdAt: 'DESC',
-    //         },
-    //     });
-    //     info(`Fetching invoices for tenant ID: ${tenantId}, \t found: ${invoices} invoices`);
-
-    //     if (!invoices || invoices.length === 0) {
-    //         throw new NotFoundException(`No invoices found for tenantId: ${tenantId}`);
-    //     }
-
-    //     console.log("🚀 ~ InvoiceService ~ findInvoicesByTenantId ~ invoices:", invoices)
-    //     return invoices;
-    // }
 
     async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
         try {
@@ -1846,209 +399,207 @@ export class InvoiceService {
         }
     }
 
+    /**
+     * Find all invoices for a buyer by their wallet address
+     * @param walletAddress - The wallet address of the buyer
+     * @returns Promise<Invoice[]>
+     */
+    async findInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
+        // First find the customer by wallet address
+        const customer = await this.customerRepository.findOne({
+            where: { wallet_address: walletAddress }
+        });
 
+        if (!customer) {
+            throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+        }
 
-/**
-   * Find all invoices for a buyer by their wallet address
-   * @param walletAddress - The wallet address of the buyer
-   * @returns Promise<Invoice[]>
-   */
-async findInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
-    // First find the customer by wallet address
-    const customer = await this.customerRepository.findOne({
-      where: { wallet_address: walletAddress }
-    });
+        // Find all invoices for this customer
+        const invoices = await this.invoiceRepository.find({
+            where: { buyer: { id: customer.id } },
+            relations: ['seller', 'buyer'],
+            order: { createdAt: 'DESC' }
+        });
 
-    if (!customer) {
-      throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+        if (invoices.length === 0) {
+            throw new NotFoundException(`No invoices found for wallet address ${walletAddress}`);
+        }
+
+        return invoices;
     }
 
-    // Find all invoices for this customer
-    const invoices = await this.invoiceRepository.find({
-      where: { buyer: { id: customer.id } },
-      relations: ['seller', 'buyer'],
-      order: { createdAt: 'DESC' }
-    });
+    /**
+     * Find pending invoices for a buyer by their wallet address
+     * @param walletAddress - The wallet address of the buyer
+     * @returns Promise<Invoice[]>
+     */
+    async findPendingInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
+        // First find the customer by wallet address
+        const customer = await this.customerRepository.findOne({
+            where: { wallet_address: walletAddress }
+        });
 
-    if (invoices.length === 0) {
-      throw new NotFoundException(`No invoices found for wallet address ${walletAddress}`);
+        if (!customer) {
+            throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+        }
+
+        // Find all pending invoices for this customer
+        const invoices = await this.invoiceRepository.find({
+            where: {
+                buyer: { id: customer.id },
+                status: 'pending'
+            },
+            relations: ['seller', 'buyer'],
+            order: { createdAt: 'DESC' }
+        });
+
+        return invoices;
     }
 
-    return invoices;
-  }
+    /**
+     * Approve an invoice by buyer
+     * @param invoiceId - The ID of the invoice to approve
+     * @param buyerWalletAddress - The wallet address of the buyer
+     * @returns Promise<any>
+     */
+    async approveInvoiceByBuyer(invoiceId: string, buyerWalletAddress: string): Promise<any> {
+        // Find the invoice with buyer details
+        const invoice = await this.invoiceRepository.findOne({
+            where: { invoiceId },
+            relations: ['buyer', 'seller']
+        });
 
-  /**
-   * Find pending invoices for a buyer by their wallet address
-   * @param walletAddress - The wallet address of the buyer
-   * @returns Promise<Invoice[]>
-   */
-  async findPendingInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
-    // First find the customer by wallet address
-    const customer = await this.customerRepository.findOne({
-      where: { wallet_address: walletAddress }
-    });
+        if (!invoice) {
+            throw new NotFoundException(`Invoice with ID ${invoiceId} not found`);
+        }
 
-    if (!customer) {
-      throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+        // Verify that the buyer's wallet address matches
+        if (invoice.buyer.wallet_address !== buyerWalletAddress) {
+            throw new ForbiddenException('You are not authorized to approve this invoice');
+        }
+
+        // Check if invoice is already approved or rejected
+        if (invoice.status !== 'pending') {
+            throw new ForbiddenException(`Invoice is already ${invoice.status}`);
+        }
+
+        // Update invoice status to approved
+        invoice.status = 'approved';
+        invoice.buyerApprovalDate = new Date();
+        invoice.approvedBy = invoice.buyer.id;
+
+        const updatedInvoice = await this.invoiceRepository.save(invoice);
+
+        return {
+            invoiceId: updatedInvoice.invoiceId,
+            invoiceNo: updatedInvoice.invoiceNo,
+            status: updatedInvoice.status,
+            buyerApprovalDate: updatedInvoice.buyerApprovalDate,
+            approvedBy: updatedInvoice.approvedBy,
+            message: 'Invoice approved successfully'
+        };
     }
 
-    // Find all pending invoices for this customer
-    const invoices = await this.invoiceRepository.find({
-      where: { 
-        buyer: { id: customer.id },
-        status: 'pending'
-      },
-      relations: ['seller', 'buyer'],
-      order: { createdAt: 'DESC' }
-    });
+    /**
+     * Reject an invoice by buyer
+     * @param invoiceId - The ID of the invoice to reject
+     * @param buyerWalletAddress - The wallet address of the buyer
+     * @returns Promise<any>
+     */
+    async rejectInvoiceByBuyer(invoiceId: string, buyerWalletAddress: string): Promise<any> {
+        // Find the invoice with buyer details
+        const invoice = await this.invoiceRepository.findOne({
+            where: { invoiceId },
+            relations: ['buyer', 'seller']
+        });
 
-    return invoices;
-  }
+        if (!invoice) {
+            throw new NotFoundException(`Invoice with ID ${invoiceId} not found`);
+        }
 
-  /**
-   * Approve an invoice by buyer
-   * @param invoiceId - The ID of the invoice to approve
-   * @param buyerWalletAddress - The wallet address of the buyer
-   * @returns Promise<any>
-   */
-  async approveInvoiceByBuyer(invoiceId: string, buyerWalletAddress: string): Promise<any> {
-    // Find the invoice with buyer details
-    const invoice = await this.invoiceRepository.findOne({
-      where: { invoiceId },
-      relations: ['buyer', 'seller']
-    });
+        // Verify that the buyer's wallet address matches
+        if (invoice.buyer.wallet_address !== buyerWalletAddress) {
+            throw new ForbiddenException('You are not authorized to reject this invoice');
+        }
 
-    if (!invoice) {
-      throw new NotFoundException(`Invoice with ID ${invoiceId} not found`);
+        // Check if invoice is already approved or rejected
+        if (invoice.status !== 'pending') {
+            throw new ForbiddenException(`Invoice is already ${invoice.status}`);
+        }
+
+        // Update invoice status to rejected
+        invoice.status = 'rejected';
+        invoice.buyerApprovalDate = new Date();
+        invoice.approvedBy = invoice.buyer.id;
+
+        const updatedInvoice = await this.invoiceRepository.save(invoice);
+
+        return {
+            invoiceId: updatedInvoice.invoiceId,
+            invoiceNo: updatedInvoice.invoiceNo,
+            status: updatedInvoice.status,
+            buyerApprovalDate: updatedInvoice.buyerApprovalDate,
+            approvedBy: updatedInvoice.approvedBy,
+            message: 'Invoice rejected successfully'
+        };
     }
 
-    // Verify that the buyer's wallet address matches
-    if (invoice.buyer.wallet_address !== buyerWalletAddress) {
-      throw new ForbiddenException('You are not authorized to approve this invoice');
+    /**
+     * Get invoice statistics for a buyer
+     * @param walletAddress - The wallet address of the buyer
+     * @returns Promise<any>
+     */
+    async getBuyerInvoiceStats(walletAddress: string): Promise<any> {
+        // First find the customer by wallet address
+        const customer = await this.customerRepository.findOne({
+            where: { wallet_address: walletAddress }
+        });
+
+        if (!customer) {
+            throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
+        }
+
+        // Get invoice statistics
+        const totalInvoices = await this.invoiceRepository.count({
+            where: { buyer: { id: customer.id } }
+        });
+
+        const pendingInvoices = await this.invoiceRepository.count({
+            where: { buyer: { id: customer.id }, status: 'pending' }
+        });
+
+        const approvedInvoices = await this.invoiceRepository.count({
+            where: { buyer: { id: customer.id }, status: 'approved' }
+        });
+
+        const rejectedInvoices = await this.invoiceRepository.count({
+            where: { buyer: { id: customer.id }, status: 'rejected' }
+        });
+
+        // Get total amount from approved invoices
+        const totalAmountResult = await this.invoiceRepository
+            .createQueryBuilder('invoice')
+            .select('SUM(invoice.grandTotal)', 'totalAmount')
+            .where('invoice.buyerId = :buyerId', { buyerId: customer.id })
+            .andWhere('invoice.status = :status', { status: 'approved' })
+            .getRawOne();
+
+        return {
+            customer: {
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                walletAddress: customer.wallet_address
+            },
+            statistics: {
+                totalInvoices,
+                pendingInvoices,
+                approvedInvoices,
+                rejectedInvoices,
+                totalApprovedAmount: totalAmountResult?.totalAmount || 0
+            }
+        };
     }
-
-    // Check if invoice is already approved or rejected
-    if (invoice.status !== 'pending') {
-      throw new ForbiddenException(`Invoice is already ${invoice.status}`);
-    }
-
-    // Update invoice status to approved
-    invoice.status = 'approved';
-    invoice.buyerApprovalDate = new Date();
-    invoice.approvedBy = invoice.buyer.id;
-
-    const updatedInvoice = await this.invoiceRepository.save(invoice);
-
-    return {
-      invoiceId: updatedInvoice.invoiceId,
-      invoiceNo: updatedInvoice.invoiceNo,
-      status: updatedInvoice.status,
-      buyerApprovalDate: updatedInvoice.buyerApprovalDate,
-      approvedBy: updatedInvoice.approvedBy,
-      message: 'Invoice approved successfully'
-    };
-  }
-
-  /**
-   * Reject an invoice by buyer
-   * @param invoiceId - The ID of the invoice to reject
-   * @param buyerWalletAddress - The wallet address of the buyer
-   * @returns Promise<any>
-   */
-  async rejectInvoiceByBuyer(invoiceId: string, buyerWalletAddress: string): Promise<any> {
-    // Find the invoice with buyer details
-    const invoice = await this.invoiceRepository.findOne({
-      where: { invoiceId },
-      relations: ['buyer', 'seller']
-    });
-
-    if (!invoice) {
-      throw new NotFoundException(`Invoice with ID ${invoiceId} not found`);
-    }
-
-    // Verify that the buyer's wallet address matches
-    if (invoice.buyer.wallet_address !== buyerWalletAddress) {
-      throw new ForbiddenException('You are not authorized to reject this invoice');
-    }
-
-    // Check if invoice is already approved or rejected
-    if (invoice.status !== 'pending') {
-      throw new ForbiddenException(`Invoice is already ${invoice.status}`);
-    }
-
-    // Update invoice status to rejected
-    invoice.status = 'rejected';
-    invoice.buyerApprovalDate = new Date();
-    invoice.approvedBy = invoice.buyer.id;
-
-    const updatedInvoice = await this.invoiceRepository.save(invoice);
-
-    return {
-      invoiceId: updatedInvoice.invoiceId,
-      invoiceNo: updatedInvoice.invoiceNo,
-      status: updatedInvoice.status,
-      buyerApprovalDate: updatedInvoice.buyerApprovalDate,
-      approvedBy: updatedInvoice.approvedBy,
-      message: 'Invoice rejected successfully'
-    };
-  }
-
-  /**
-   * Get invoice statistics for a buyer
-   * @param walletAddress - The wallet address of the buyer
-   * @returns Promise<any>
-   */
-  async getBuyerInvoiceStats(walletAddress: string): Promise<any> {
-    // First find the customer by wallet address
-    const customer = await this.customerRepository.findOne({
-      where: { wallet_address: walletAddress }
-    });
-
-    if (!customer) {
-      throw new NotFoundException(`Customer with wallet address ${walletAddress} not found`);
-    }
-
-    // Get invoice statistics
-    const totalInvoices = await this.invoiceRepository.count({
-      where: { buyer: { id: customer.id } }
-    });
-
-    const pendingInvoices = await this.invoiceRepository.count({
-      where: { buyer: { id: customer.id }, status: 'pending' }
-    });
-
-    const approvedInvoices = await this.invoiceRepository.count({
-      where: { buyer: { id: customer.id }, status: 'approved' }
-    });
-
-    const rejectedInvoices = await this.invoiceRepository.count({
-      where: { buyer: { id: customer.id }, status: 'rejected' }
-    });
-
-    // Get total amount from approved invoices
-    const totalAmountResult = await this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .select('SUM(invoice.grandTotal)', 'totalAmount')
-      .where('invoice.buyerId = :buyerId', { buyerId: customer.id })
-      .andWhere('invoice.status = :status', { status: 'approved' })
-      .getRawOne();
-
-    return {
-      customer: {
-        id: customer.id,
-        name: customer.name,
-        email: customer.email,
-        walletAddress: customer.wallet_address
-      },
-      statistics: {
-        totalInvoices,
-        pendingInvoices,
-        approvedInvoices,
-        rejectedInvoices,
-        totalApprovedAmount: totalAmountResult?.totalAmount || 0
-      }
-    };
-  }
 
     async updateInvoice(id: string, updateInvoiceDto: UpdateInvoiceDto): Promise<Invoice> {
         try {
@@ -2077,19 +628,7 @@ async findInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
             const txHash = await this.contract.methods
                 .updateInvoice(
                     invoice.invoiceNo,
-                    updateInvoiceDto.invoiceDate || invoice.invoiceDate,
-                    updateInvoiceDto.supplyType || invoice.supplyType,
-                    (updateInvoiceDto.items ?? []).map(i => i.serialNo),
-                    (updateInvoiceDto.items ?? []).map(i => i.name),
-                    (updateInvoiceDto.items ?? []).map(i => i.quantity),
-                    (updateInvoiceDto.items ?? []).map(i => i.unitPrice),
-                    (updateInvoiceDto.items ?? []).map(i => i.gstRate),
-                    (updateInvoiceDto.items ?? []).map(i => i.totalAmount),                  // totalAmounts
-                    updateInvoiceDto.totalTaxableValue || invoice.totalTaxableValue,
-                    updateInvoiceDto.totalGstAmount || invoice.totalGstAmount,
-                    updateInvoiceDto.grandTotal || invoice.grandTotal,
-                    updateInvoiceDto.paymentTerms || invoice.paymentTerms,
-                    updateInvoiceDto.isFinal ?? invoice.isFinal
+                    Math.floor((updateInvoiceDto.grandTotal || invoice.grandTotal) * 100)
                 )
                 .send({ from: this.account, gas: 5000000, gasPrice: '3000000000' });
 
@@ -2104,14 +643,12 @@ async findInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
         }
     }
 
-
     async deleteInvoice(id: string): Promise<void> {
         const result = await this.invoiceRepository.delete(id);
         if (result.affected === 0) {
             throw new NotFoundException(`Invoice with ID ${id} not found`);
         }
     }
-
 
     async findAll(): Promise<Invoice[]> {
         return this.invoiceRepository.find({
@@ -2281,6 +818,4 @@ async findInvoicesByBuyerWallet(walletAddress: string): Promise<Invoice[]> {
         }
         return obj;
     }
-
 }
-

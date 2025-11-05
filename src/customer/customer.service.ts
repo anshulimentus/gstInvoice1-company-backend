@@ -3,9 +3,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import Web3 from 'web3';
+import { Web3 } from 'web3';
 import { Customer } from "./entities/customer.entity";
 import * as chalk from "chalk";
+import { CONTRACT_ABI } from '../abi/contract.abi';
 
 
 @Injectable()
@@ -25,7 +26,7 @@ export class CustomerService {
         if (!process.env.PROVIDER_URL) {
             throw new Error('PROVIDER_URL is not set in environment variables');
         }
-        if (!process.env.CUSTOMER_CONTRACT_ADDRESS) {
+        if (!process.env.CONTRACT_ADDRESS) {
             throw new Error('CONTRACT_ADDRESS is not set in environment variables');
         }
         if (!process.env.PRIVATE_KEY) {
@@ -36,340 +37,11 @@ export class CustomerService {
         }
 
         this.providerURL = process.env.PROVIDER_URL;
-        this.contractAddress = process.env.CUSTOMER_CONTRACT_ADDRESS;
+        this.contractAddress = process.env.CONTRACT_ADDRESS;
         this.privateKey = process.env.PRIVATE_KEY;
 
         this.web3 = new Web3(new Web3.providers.HttpProvider(this.providerURL));
-        this.contract = new this.web3.eth.Contract([
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "CustomerAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    }
-                ],
-                "name": "CustomerDeleted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "CustomerUpdated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductDeleted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "ProductUpdated",
-                "type": "event"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_id",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "addCustomer",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "addProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "name": "customers",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "id",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_id",
-                        "type": "string"
-                    }
-                ],
-                "name": "deleteCustomer",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "deleteProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "nextCustomerId",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "products",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "productID",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "productName",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalProducts",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "string",
-                        "name": "_id",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_gstNumber",
-                        "type": "string"
-                    }
-                ],
-                "name": "updateCustomer",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "_id",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "_name",
-                        "type": "string"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_price",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "updateProduct",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }
-        ], this.contractAddress);
+        this.contract = new this.web3.eth.Contract(CONTRACT_ABI, this.contractAddress);
         const sanitizedPrivateKey = this.privateKey.startsWith("0x")
             ? this.privateKey
             : "0x" + this.privateKey;
@@ -404,19 +76,37 @@ export class CustomerService {
         // console.log("📌 Saved Customer:", savedCustomer);
 
         // Ensure all values exist before blockchain call
-        if (!savedCustomer.id || !savedCustomer.name || !savedCustomer.gstNumber) {
+        if (!savedCustomer.wallet_address || !savedCustomer.name || !savedCustomer.gstNumber) {
             throw new BadRequestException("Missing required fields for blockchain transaction");
         }
 
-        // console.log("🚀 Sending to blockchain:", savedCustomer.id, savedCustomer.name, savedCustomer.gstNumber);
+        // console.log("🚀 Sending to blockchain:", savedCustomer.wallet_address, savedCustomer.name, savedCustomer.gstNumber);
 
         // Send data to blockchain
         const tx = await this.contract.methods
-            .addCustomer(savedCustomer.id, savedCustomer.name, savedCustomer.gstNumber)
+            .addCustomer(savedCustomer.wallet_address, savedCustomer.name, savedCustomer.gstNumber)
             .send({ from: this.account });
 
-        // Save blockchain transaction hash
+        // Get the blockchain customer ID from the CustomerAdded event
+        let blockchainCustomerId: number;
+        try {
+            if (tx.events && tx.events.CustomerAdded) {
+                blockchainCustomerId = parseInt(tx.events.CustomerAdded.returnValues.customerId);
+                console.log("🔢 Blockchain Customer ID (from event):", blockchainCustomerId);
+            } else {
+                // Fallback: query totalCustomers if event is not available
+                const totalCustomers = await this.contract.methods.totalCustomers().call();
+                blockchainCustomerId = parseInt(totalCustomers.toString());
+                console.log("🔢 Blockchain Customer ID (fallback from totalCustomers):", blockchainCustomerId);
+            }
+        } catch (error) {
+            console.error("❌ Could not get blockchain customer ID:", error);
+            throw new InternalServerErrorException('Failed to get blockchain customer ID');
+        }
+
+        // Save blockchain transaction hash and customer ID
         savedCustomer.transactionHash = tx.transactionHash;
+        savedCustomer.blockchainCustomerId = blockchainCustomerId;
         await this.customerRepository.save(savedCustomer);
 
         return savedCustomer;
@@ -463,15 +153,37 @@ export class CustomerService {
             throw new NotFoundException(`Customer with ID ${id} not found`);
         }
 
-        const { name, gstNumber, ...rest } = updateCustomerDto;
+        const { name, gstNumber, phone, ...rest } = updateCustomerDto;
+
+        // Check for duplicate GST number if gstNumber is being updated
+        if (gstNumber && gstNumber !== customer.gstNumber) {
+            const existingCustomer = await this.customerRepository.findOne({ where: { gstNumber } });
+            if (existingCustomer && existingCustomer.id !== customer.id) {
+                throw new BadRequestException(`Customer with GST number ${gstNumber} already exists.`);
+            }
+        }
+
+        // Check for duplicate phone if phone is being updated
+        if (phone && phone !== customer.phone) {
+            const existingCustomer = await this.customerRepository.findOne({ where: { phone } });
+            if (existingCustomer && existingCustomer.id !== customer.id) {
+                throw new BadRequestException(`Customer with phone ${phone} already exists.`);
+            }
+        }
 
         try {
-            const receipt = await this.contract.methods.updateCustomer(id, name, gstNumber)
-                .send({ from: this.account });
+            // Use blockchainCustomerId for update (uint256 parameter)
+            const receipt = await this.contract.methods.updateCustomer(
+                customer.blockchainCustomerId,  // _customerId (uint256)
+                customer.wallet_address,        // _newWallet (keep same wallet)
+                name || customer.name,          // _newName
+                gstNumber || customer.gstNumber // _newGSTNumber
+            )
+            .send({ from: this.account });
 
             const transactionHash = receipt.transactionHash; // Capture transaction hash
 
-            Object.assign(customer, { name, gstNumber, transactionHash, ...rest });
+            Object.assign(customer, { name, gstNumber, phone, transactionHash, ...rest });
             return this.customerRepository.save(customer);
         } catch (error) {
             throw new InternalServerErrorException('Blockchain transaction failed');
@@ -482,6 +194,20 @@ export class CustomerService {
     // DELETE Customer (On-chain & Database)
 
     async remove(id: string): Promise<void> {
+        const customer = await this.customerRepository.findOne({ where: { id } });
+        if (!customer) {
+            throw new NotFoundException(`Customer with ID ${id} not found.`);
+        }
+
+        // Delete from blockchain first using blockchainCustomerId
+        try {
+            await this.contract.methods.deleteCustomer(customer.blockchainCustomerId)
+                .send({ from: this.account });
+        } catch (error) {
+            throw new InternalServerErrorException('Blockchain transaction failed');
+        }
+
+        // Then delete from database
         const result = await this.customerRepository.delete(id);
         if (result.affected === 0) {
             throw new NotFoundException(`Customer with ID ${id} not found.`);
