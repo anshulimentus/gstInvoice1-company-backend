@@ -43,7 +43,7 @@
 
 1. Install dependencies:
    ```bash
-   npm ci --only=production
+   npm ci
    ```
 
 2. Build the application:
@@ -55,6 +55,30 @@
    ```bash
    npm run start:prod
    ```
+
+## Render.com Deployment
+
+For Render.com deployment, use these settings:
+
+- **Build Command**: `npm install && npm run build:prod`
+- **Start Command**: `npm run start:prod`
+
+Make sure your `render.yaml` or service settings include:
+```yaml
+services:
+  - type: web
+    name: gst-invoice-backend
+    buildCommand: npm install && npm run build:prod
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromSecret: database_url
+      - key: SECRET_KEY
+        fromSecret: secret_key
+      # Add other required environment variables
+```
 
 ## Using PM2 (Recommended for Production)
 
