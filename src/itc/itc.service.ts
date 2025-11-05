@@ -1,11 +1,11 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Invoice } from 'src/invoice/entities/invoice.entity';
+import { Invoice } from '../invoice/entities/invoice.entity';
 import { Repository } from 'typeorm';
 import { ItcClaim } from './entities/itc-claim.entity';
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
-import { BuyerInfoDto } from 'src/invoice/dto/buyer-invoice-response.dto';
+import { BuyerInfoDto } from '../invoice/dto/buyer-invoice-response.dto';
 
 @Injectable()
 export class ItcService {

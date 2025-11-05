@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { OneToMany } from 'typeorm';
-import { Invoice } from 'src/invoice/entities/invoice.entity';
+import { Invoice } from '../../invoice/entities/invoice.entity';
 
 @Entity('customer')
 export class Customer {

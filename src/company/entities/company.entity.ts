@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { User } from '../../users/users.entity';
-import { Invoice } from 'src/invoice/entities/invoice.entity';
+import { Invoice } from '../../invoice/entities/invoice.entity';
 
 
 @Entity('company') // Explicitly define table name

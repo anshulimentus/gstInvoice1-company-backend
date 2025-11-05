@@ -6,7 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Invoice } from 'src/invoice/entities/invoice.entity';
+import { Invoice } from '../../invoice/entities/invoice.entity';
 
 @Entity('itc_claims')
 export class ItcClaim {

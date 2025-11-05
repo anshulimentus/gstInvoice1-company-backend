@@ -28,7 +28,7 @@ import { RolesGuard } from "../auth/roles.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Roles } from "../auth/roles.decorator";
 import { Role } from "../users/roles.enum";
-import { Customer } from 'src/customer/entities/customer.entity';
+import { Customer } from '../customer/entities/customer.entity';
 import { info } from 'console';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';

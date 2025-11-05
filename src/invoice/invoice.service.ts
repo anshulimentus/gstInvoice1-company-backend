@@ -9,8 +9,8 @@ import Web3 from 'web3';
 import * as PDFDocument from 'pdfkit';
 import * as chalk from 'chalk';
 import { info } from 'console';
-import { Customer } from 'src/customer/entities/customer.entity';
-import { CONTRACT_ABI } from 'src/abi/contract.abi';
+import { Customer } from '../customer/entities/customer.entity';
+import { CONTRACT_ABI } from '../abi/contract.abi';
 
 @Injectable()
 export class InvoiceService {

@@ -3,7 +3,7 @@ import { ItcController } from "./itc.controller";
 import { ItcService } from "./itc.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ItcClaim } from "./entities/itc-claim.entity";
-import { Invoice } from "src/invoice/entities/invoice.entity";
+import { Invoice } from "../invoice/entities/invoice.entity";
 
 @Module({
     imports: [

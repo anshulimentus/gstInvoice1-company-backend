@@ -6,8 +6,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CompanyModule } from 'src/company/company.module';
-import { Company } from 'src/company/entities/company.entity';
+import { CompanyModule } from '../company/company.module';
+import { Company } from '../company/entities/company.entity';
 
 @Module({
   imports: [

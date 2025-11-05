@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
-import { Company } from 'src/company/entities/company.entity';
+import { Company } from '../company/entities/company.entity';
 import { ethers } from 'ethers';
 
 

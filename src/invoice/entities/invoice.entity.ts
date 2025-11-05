@@ -7,9 +7,9 @@ import {
   JoinColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { Customer } from 'src/customer/entities/customer.entity';
-import { Company } from 'src/company/entities/company.entity';
-import { ItcClaim } from 'src/itc/entities/itc-claim.entity';
+import { Customer } from '../../customer/entities/customer.entity';
+import { Company } from '../../company/entities/company.entity';
+import { ItcClaim } from '../../itc/entities/itc-claim.entity';
 
 @Entity('invoice')
 export class Invoice {
