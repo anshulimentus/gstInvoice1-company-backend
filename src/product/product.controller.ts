@@ -2,10 +2,10 @@ import { Controller, Get, Body, Query, Post, Patch, Delete, UseGuards, InternalS
 import { ProductService } from "./product.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
-import { RolesGuard } from "src/auth/roles.guard";
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
-import { Roles } from "src/auth/roles.decorator";
-import { Role } from "src/users/roles.enum";
+import { RolesGuard } from "../auth/roles.guard";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { Role } from "../users/roles.enum";
 import * as chalk from "chalk";
 
 @Controller('product')

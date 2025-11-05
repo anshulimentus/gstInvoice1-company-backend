@@ -3,10 +3,10 @@ import { CustomerService } from "./customer.service";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
 import { UpdateCustomerDto } from "./dto/update-customer.dto";
 import * as chalk from "chalk";
-import { RolesGuard } from "src/auth/roles.guard";
-import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
-import { Roles } from "src/auth/roles.decorator";
-import { Role } from "src/users/roles.enum";
+import { RolesGuard } from "../auth/roles.guard";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { Role } from "../users/roles.enum";
 
 @Controller('customer')
 export class CustomerController {
