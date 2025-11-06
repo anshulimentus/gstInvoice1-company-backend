@@ -25,7 +25,7 @@ export const AppDataSourceProd = new DataSource({
     Invoice,
     ItcClaim,
   ],
-  migrations: [__dirname + '/*.ts'],
+  migrations: [__dirname + '/[0-9]*.ts'],
   synchronize: false,
   logging: false, // Disable logging in production
   migrationsTableName: 'migrations',

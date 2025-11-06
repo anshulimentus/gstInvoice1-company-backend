@@ -52,7 +52,7 @@ export class Customer {
   @OneToMany(() => Invoice, (invoice) => invoice.buyer)
   invoices: Invoice[];
 
-  @Column({ name: 'wallet_address', type: 'varchar', unique: true })
+  @Column({ name: 'wallet_address', type: 'varchar' })
   wallet_address: string;
 
   @Column({ type: 'uuid' }) // Store the tenantId from Company

@@ -440,13 +440,13 @@ export class InitialMigration1730612752000 implements MigrationInterface {
       );
     }
 
-    // Check if itc_claim table exists
-    const itcClaimTableExists = await queryRunner.hasTable('itc_claim');
-    if (!itcClaimTableExists) {
-      // Create itc_claim table
+    // Check if itc_claims table exists
+    const itcClaimsTableExists = await queryRunner.hasTable('itc_claims');
+    if (!itcClaimsTableExists) {
+      // Create itc_claims table with correct structure
       await queryRunner.createTable(
         new Table({
-          name: 'itc_claim',
+          name: 'itc_claims',
           columns: [
             {
               name: 'id',
@@ -455,34 +455,49 @@ export class InitialMigration1730612752000 implements MigrationInterface {
               default: 'uuid_generate_v4()',
             },
             {
-              name: 'invoiceId',
+              name: 'invoice_id',
               type: 'uuid',
             },
             {
-              name: 'claimedAmount',
+              name: 'company_id',
+              type: 'varchar',
+            },
+            {
+              name: 'company_wallet',
+              type: 'varchar',
+            },
+            {
+              name: 'input_gst',
               type: 'decimal',
-              precision: 10,
+              precision: 12,
               scale: 2,
             },
             {
-              name: 'claimDate',
-              type: 'timestamp',
-              default: 'now()',
+              name: 'output_gst',
+              type: 'decimal',
+              precision: 12,
+              scale: 2,
             },
             {
-              name: 'status',
-              type: 'varchar',
-              default: "'pending'",
+              name: 'claimable_amount',
+              type: 'decimal',
+              precision: 12,
+              scale: 2,
             },
             {
-              name: 'transactionHash',
+              name: 'transaction_hash',
               type: 'varchar',
               isNullable: true,
+            },
+            {
+              name: 'claimed_at',
+              type: 'timestamp with time zone',
+              default: 'now()',
             },
           ],
           foreignKeys: [
             {
-              columnNames: ['invoiceId'],
+              columnNames: ['invoice_id'],
               referencedTableName: 'invoice',
               referencedColumnNames: ['id'],
             },
