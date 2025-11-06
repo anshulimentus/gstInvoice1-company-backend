@@ -22,10 +22,12 @@ export class Customer {
   @Column({ type: 'varchar', length: 15, unique: true, nullable: true })
   phone: string;
 
-  @Column({ type: 'varchar', length: 15, unique: true, nullable: false })
+  // Allow same customer (gstNumber) across different companies
+  // Make it unique per company using company_tenant_id
+  @Column({ type: 'varchar', length: 15, nullable: false })
   gstNumber: string;
 
-  @Column({ type: 'varchar', length: 10, unique: true, nullable: true })
+  @Column({ type: 'varchar', length: 10, nullable: true })
   panNumber: string;
 
   @Column({ type: 'enum', enum: ['individual', 'business'], nullable: false })
@@ -60,4 +62,8 @@ export class Customer {
 
   @Column({ type: 'int', nullable: true })
   blockchainCustomerId: number;
+
+  // Composite unique constraint to ensure same customer can only exist once per company
+  // (gstNumber + company_tenant_id) and (wallet_address + company_tenant_id) should be unique
+  // This will be handled in the migration
 }
