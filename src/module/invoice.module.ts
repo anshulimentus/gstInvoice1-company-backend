@@ -6,11 +6,13 @@ import { Invoice } from '../entities/invoice.entity';
 import { ConfigModule } from '@nestjs/config';
 import { Customer } from '../entities/customer.entity';
 import { Company } from '../entities/company.entity';
+import { AuthModule } from '../module/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Invoice, Customer, Company]),
     ConfigModule.forRoot(), // For accessing environment variables
+    AuthModule,
   ],
   controllers: [InvoiceController],
   providers: [InvoiceService],

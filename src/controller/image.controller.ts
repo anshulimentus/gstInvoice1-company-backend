@@ -27,17 +27,26 @@ export class ImageController {
 
   @Get(':id')
   async getImage(@Param('id') id: string, @Res() res: Response) {
+    console.log('Fetching image with id:', id);
     const image = await this.imageService.getImageById(id);
+    console.log('Image found:', !!image);
 
     if (!image) {
       throw new NotFoundException('Image not found');
     }
 
+    console.log('Image mimeType:', image.mimeType);
+    console.log('Image base64data length:', image.base64data.length);
+
     // Set content type based on the stored mime type
     res.setHeader('Content-Type', image.mimeType);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     // Send the base64 data as binary
-    const imageBuffer = Buffer.from(image.base64data.split(',')[1], 'base64');
+    const imageBuffer = Buffer.from(image.base64data, 'base64');
+    console.log('Image buffer length:', imageBuffer.length);
     res.send(imageBuffer);
   }
 
@@ -52,7 +61,7 @@ export class ImageController {
     return {
       id: image.id,
       filename: image.filename,
-      base64Data: image.base64data,
+      base64Data: `data:${image.mimeType};base64,${image.base64data}`,
       mimeType: image.mimeType,
       uploadedAt: image.uploadedAt,
     };

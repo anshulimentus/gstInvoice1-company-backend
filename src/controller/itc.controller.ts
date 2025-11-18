@@ -137,22 +137,42 @@ export class ItcController {
   }
 
   /**
-   * GET /itc/analysis - Get detailed ITC analysis
-   */
-  @Get('analysis')
-  async getDetailedAnalysis(@Request() req: any) {
-    try {
-      const result = await this.itcService.getDetailedItcAnalysis(req.user);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        error: error.message,
-      };
-    }
-  }
+    * GET /itc/analysis - Get detailed ITC analysis
+    */
+   @Get('analysis')
+   async getDetailedAnalysis(@Request() req: any) {
+     try {
+       const result = await this.itcService.getDetailedItcAnalysis(req.user);
+       return {
+         success: true,
+         data: result,
+       };
+     } catch (error) {
+       return {
+         success: false,
+         message: error.message,
+         error: error.message,
+       };
+     }
+   }
+
+  /**
+    * GET /itc/monthly - Get monthly ITC breakdown
+    */
+   @Get('monthly')
+   async getMonthlyItcData(@Request() req: any) {
+     try {
+       const result = await this.itcService.getMonthlyItcBreakdown(req.user.tenant_id);
+       return {
+         success: true,
+         data: result,
+       };
+     } catch (error) {
+       return {
+         success: false,
+         message: error.message,
+         data: [],
+       };
+     }
+   }
 }

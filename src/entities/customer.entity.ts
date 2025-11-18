@@ -42,7 +42,7 @@ export class Customer {
   @Column({ type: 'text' })
   billingAddress: string;
 
-  @Column({ type: 'bigint' })
+  @Column({ type: 'int' })
   stateCode: number;
 
   @Column({ type: 'int', default: 0 })

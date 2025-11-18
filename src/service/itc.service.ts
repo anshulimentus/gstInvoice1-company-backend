@@ -224,8 +224,45 @@ export class ItcService {
     return {
       totalClaims: claims.length,
       monthlyBreakdown,
-      averageClaim: claims.length > 0 ? 
+      averageClaim: claims.length > 0 ?
         claims.reduce((sum, claim) => sum + Number(claim.claimableAmount), 0) / claims.length : 0,
     };
+  }
+
+  /**
+   * Get monthly ITC breakdown for dashboard
+   */
+  async getMonthlyItcBreakdown(companyTenantId: string) {
+    const claims = await this.getCompanyItcClaims(companyTenantId);
+
+    // Group claims by month
+    const monthlyData = claims.reduce((acc, claim) => {
+      const date = new Date(claim.claimedAt);
+      const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+
+      if (!acc[monthKey]) {
+        acc[monthKey] = {
+          month: monthKey,
+          inputGST: 0,
+          outputGST: 0,
+          netITC: 0
+        };
+      }
+
+      acc[monthKey].inputGST += Number(claim.inputGst);
+      acc[monthKey].outputGST += Number(claim.outputGst);
+      acc[monthKey].netITC += Number(claim.claimableAmount);
+
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Convert to array and sort by date
+    const result = Object.values(monthlyData).sort((a: any, b: any) => {
+      const dateA = new Date(a.month + ' 1');
+      const dateB = new Date(b.month + ' 1');
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return result;
   }
 }

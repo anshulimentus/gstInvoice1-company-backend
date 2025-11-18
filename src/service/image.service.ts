@@ -14,10 +14,13 @@ export class ImageService {
   async uploadImage(uploadImageDto: UploadImageDto): Promise<ImageEntity> {
     const { filename, base64data, mimeType } = uploadImageDto;
 
+    // Extract only the base64 data part (remove data URL prefix)
+    const base64Only = base64data.split(',')[1];
+
     // Create a new image entity
     const newImage = this.imageRepository.create({
       filename,
-      base64data,
+      base64data: base64Only,
       mimeType,
     });
 
@@ -26,6 +29,9 @@ export class ImageService {
   }
 
   async getImageById(id: string): Promise<ImageEntity | null> {
-    return await this.imageRepository.findOne({ where: { id } });
+    console.log('Querying image with id:', id);
+    const image = await this.imageRepository.findOne({ where: { id } });
+    console.log('Image query result:', image ? 'found' : 'not found');
+    return image;
   }
 }

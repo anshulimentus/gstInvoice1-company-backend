@@ -152,6 +152,28 @@ export class InvoiceService {
     return updated;
   }
 
+async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
+  try {
+    // 1. Fetch invoices directly from the database
+    const dbInvoices = await this.invoiceRepository.find({
+      where: {
+        seller: { tenantId },
+      },
+      relations: ['seller', 'buyer'],
+      order: { createdAt: 'DESC' },
+    });
+
+    // 2. Return DB results (empty array if none found)
+    return dbInvoices || [];
+
+  } catch (error) {
+    this.logger.error(`Error fetching invoices for tenantId ${tenantId}:`, error.stack);
+    throw error;
+  }
+}
+
+
+
   // ============================================================
   // DELETE
   // ============================================================
@@ -182,14 +204,12 @@ export class InvoiceService {
   // ============================================================
   // BUYER INVOICE ACTIONS
   // ============================================================
-  async approveInvoiceByBuyer(invoiceId: string, wallet: string) {
+  async approveInvoiceByBuyer(invoiceNo: string, wallet: string) {
     const inv = await this.invoiceRepository.findOne({
-      where: { invoiceId },
+      where: { invoiceNo },
       relations: ['buyer'],
     });
     if (!inv) throw new NotFoundException();
-    if (inv.buyer.walletAddress !== wallet)
-      throw new ForbiddenException('Unauthorized action');
     if (inv.status !== InvoiceStatus.PENDING)
       throw new BadRequestException(`Invoice already ${inv.status}`);
 
@@ -199,14 +219,12 @@ export class InvoiceService {
     return this.invoiceRepository.save(inv);
   }
 
-  async rejectInvoiceByBuyer(invoiceId: string, wallet: string) {
+  async rejectInvoiceByBuyer(invoiceNo: string, wallet: string) {
     const inv = await this.invoiceRepository.findOne({
-      where: { invoiceId },
+      where: { invoiceNo },
       relations: ['buyer'],
     });
     if (!inv) throw new NotFoundException();
-    if (inv.buyer.walletAddress !== wallet)
-      throw new ForbiddenException('Unauthorized action');
     if (inv.status !== InvoiceStatus.PENDING)
       throw new BadRequestException(`Invoice already ${inv.status}`);
 
@@ -214,6 +232,38 @@ export class InvoiceService {
     inv.buyerApprovalDate = new Date();
     inv.approvedBy = inv.buyer.id;
     return this.invoiceRepository.save(inv);
+  }
+
+  async finalizeInvoiceOnChain(invoiceId: string, transactionHash: string, userWallet: string) {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { invoiceId }
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    if (invoice.status !== InvoiceStatus.APPROVED) {
+      throw new BadRequestException('Invoice must be approved before finalization');
+    }
+
+    if (invoice.isFinal) {
+      throw new BadRequestException('Invoice already finalized');
+    }
+
+    // Update invoice with blockchain transaction details
+    invoice.isFinal = true;
+    invoice.status = InvoiceStatus.FINALIZED;
+    invoice.transactionHash = transactionHash;
+    invoice.approvedBy = userWallet;
+
+    await this.invoiceRepository.save(invoice);
+
+    return {
+      message: 'Invoice finalized successfully',
+      transactionHash,
+      invoiceId: invoice.invoiceId
+    };
   }
 
   // ============================================================
@@ -242,6 +292,34 @@ export class InvoiceService {
       buyer: customer.name,
       statistics: counts,
     };
+  }
+
+  // ============================================================
+  // GET BUYER INVOICES BY WALLET
+  // ============================================================
+  async getBuyerInvoices(wallet: string): Promise<Invoice[]> {
+    const customer = await this.customerRepository.findOne({ where: { walletAddress: wallet } });
+    if (!customer) return [];
+
+    return this.invoiceRepository.find({
+      where: { buyer: { id: customer.id } },
+      relations: ['seller', 'buyer'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // ============================================================
+  // GET BUYER PENDING INVOICES BY WALLET
+  // ============================================================
+  async getBuyerPendingInvoices(wallet: string): Promise<Invoice[]> {
+    const customer = await this.customerRepository.findOne({ where: { walletAddress: wallet } });
+    if (!customer) return [];
+
+    return this.invoiceRepository.find({
+      where: { buyer: { id: customer.id }, status: InvoiceStatus.PENDING },
+      relations: ['seller', 'buyer'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
   // ============================================================
@@ -309,5 +387,37 @@ export class InvoiceService {
       eligible: reasons.length === 0,
       reasons
     };
+  }
+
+  // ============================================================
+  // GET ELIGIBLE ITC INVOICES
+  // ============================================================
+  async getEligibleItcInvoices(companyTenantId: string): Promise<Invoice[]> {
+    if (!companyTenantId) {
+      this.logger.warn('getEligibleItcInvoices called with undefined companyTenantId');
+      return [];
+    }
+
+    // Check if companyTenantId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(companyTenantId)) {
+      this.logger.warn(`getEligibleItcInvoices called with invalid UUID: ${companyTenantId}`);
+      return [];
+    }
+
+    try {
+      return await this.invoiceRepository.find({
+        where: {
+          buyer: { companyTenantId },
+          status: InvoiceStatus.FINALIZED,
+          isClaimedForITC: false,
+        },
+        relations: ['seller', 'buyer'],
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
+      this.logger.error('Error fetching eligible ITC invoices:', error.stack);
+      throw new InternalServerErrorException('Failed to fetch eligible invoices');
+    }
   }
 }

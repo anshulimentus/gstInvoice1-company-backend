@@ -4,6 +4,7 @@ import { AuthService } from '../service/auth.service';
 import { UsersModule } from '../module/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../auth/jwt.strategy';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CompanyModule } from '../module/company.module';
@@ -21,7 +22,7 @@ import { Company } from '../entities/company.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, JwtModule], // Export AuthService for use in other modules
+  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  exports: [AuthService, JwtStrategy, JwtModule, JwtAuthGuard], // Export AuthService for use in other modules
 })
 export class AuthModule {}

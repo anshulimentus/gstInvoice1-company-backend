@@ -25,7 +25,7 @@ export const AppDataSourceLocal = new DataSource({
     Invoice,
     ItcClaim,
   ],
-  migrations: ['src/migrations/1762759238515-InitialEntities.ts', 'src/migrations/1762764081069-UpdateCompanyEntity.ts'],
+  migrations: ['src/migrations/1762759238515-InitialEntities.ts', 'src/migrations/1762764081069-UpdateCompanyEntity.ts', 'src/migrations/1762759219847-UpdateCustomerStateCodeType.ts', 'src/migrations/1731929230000-AddStatusToItcClaim.ts', 'src/migrations/1763472577076-ChangeItcClaimCompanyIdToUuid.ts'],
   synchronize: false,
   logging: true,
   migrationsTableName: 'migrations',

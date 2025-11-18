@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Invoice } from './invoice.entity';
 import { Company } from './company.entity';
+import { ItcClaimStatus } from '../enum/itc-claim-status.enum';
 
 @Entity('itc_claims')
 export class ItcClaim {
@@ -41,6 +42,13 @@ export class ItcClaim {
 
   @Column('numeric', { precision: 12, scale: 2, name: 'claimable_amount' })
   claimableAmount: number;
+
+  @Column({
+    type: 'enum',
+    enum: ItcClaimStatus,
+    default: ItcClaimStatus.DRAFT
+  })
+  status: ItcClaimStatus;
 
   @Column({ type: 'varchar', length: 255 })
   transactionHash: string;
