@@ -70,6 +70,25 @@ export class ItcController {
     }
   }
 
+     // Add this to your ItcController
+@Get('eligible-invoices')
+async getEligibleInvoices(@Request() req: any) {
+  try {
+    const eligibleInvoices = await this.itcService.getEligibleInvoicesForITC(req.user.tenant_id);
+    return {
+      success: true,
+      data: eligibleInvoices,
+      count: eligibleInvoices.length,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+      data: [],
+    };
+  }
+}
+
   /**
    * GET /itc/claims - Get all ITC claims for current company
    */
@@ -175,4 +194,6 @@ export class ItcController {
        };
      }
    }
+
+
 }

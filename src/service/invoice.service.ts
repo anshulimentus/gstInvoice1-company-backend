@@ -7,7 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { Invoice } from '../entities/invoice.entity';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { UpdateInvoiceDto } from '../dto/update-invoice.dto';
@@ -24,7 +24,7 @@ export class InvoiceService {
     private invoiceRepository: Repository<Invoice>,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
-  ) {}
+  ) { }
 
   // ============================================================
   // CREATE INVOICE
@@ -152,25 +152,53 @@ export class InvoiceService {
     return updated;
   }
 
-async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
-  try {
-    // 1. Fetch invoices directly from the database
-    const dbInvoices = await this.invoiceRepository.find({
-      where: {
-        seller: { tenantId },
-      },
-      relations: ['seller', 'buyer'],
-      order: { createdAt: 'DESC' },
-    });
+  async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
+    try {
+      // 1. Fetch invoices directly from the database
+      const dbInvoices = await this.invoiceRepository.find({
+        where: {
+          seller: { tenantId },
+        },
+        relations: ['seller', 'buyer'],
+        order: { createdAt: 'DESC' },
+      });
 
-    // 2. Return DB results (empty array if none found)
-    return dbInvoices || [];
+      // 2. Return DB results (empty array if none found)
+      return dbInvoices || [];
 
-  } catch (error) {
-    this.logger.error(`Error fetching invoices for tenantId ${tenantId}:`, error.stack);
-    throw error;
+    } catch (error) {
+      this.logger.error(`Error fetching invoices for tenantId ${tenantId}:`, error.stack);
+      throw error;
+    }
   }
-}
+
+  /**
+   * Get invoices where the current company is the BUYER/RECIPIENT
+   * These are invoices RECEIVED from suppliers, not invoices CREATED for others
+   * Used for ITC claim eligibility - only buyer/recipient can claim ITC on-chain
+   */
+  async findBuyerInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
+    try {
+      this.logger.log(`Fetching received invoices (buyer perspective) for tenantId: ${tenantId}`);
+
+      // Fetch invoices where this company is the BUYER (received invoices)
+      // NOT invoices where they are the SELLER (created/issued invoices)
+      const buyerInvoices = await this.invoiceRepository.find({
+        where: {
+          buyer: { companyTenantId: tenantId }, // Company is the BUYER
+        },
+        relations: ['seller', 'buyer'],
+        order: { createdAt: 'DESC' },
+      });
+
+      this.logger.log(`✅ Found ${buyerInvoices.length} received invoices for buyer company ${tenantId}`);
+      return buyerInvoices || [];
+
+    } catch (error) {
+      this.logger.error(`Error fetching buyer invoices for tenantId ${tenantId}:`, error.stack);
+      throw error;
+    }
+  }
 
 
 
@@ -204,9 +232,9 @@ async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
   // ============================================================
   // BUYER INVOICE ACTIONS
   // ============================================================
-  async approveInvoiceByBuyer(invoiceNo: string, wallet: string) {
+  async approveInvoiceByBuyer(invoiceId: string, wallet: string) {
     const inv = await this.invoiceRepository.findOne({
-      where: { invoiceNo },
+      where: { invoiceId },
       relations: ['buyer'],
     });
     if (!inv) throw new NotFoundException();
@@ -219,9 +247,9 @@ async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
     return this.invoiceRepository.save(inv);
   }
 
-  async rejectInvoiceByBuyer(invoiceNo: string, wallet: string) {
+  async rejectInvoiceByBuyer(invoiceId: string, wallet: string) {
     const inv = await this.invoiceRepository.findOne({
-      where: { invoiceNo },
+      where: { invoiceId },
       relations: ['buyer'],
     });
     if (!inv) throw new NotFoundException();
@@ -297,14 +325,91 @@ async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
   // ============================================================
   // GET BUYER INVOICES BY WALLET
   // ============================================================
-  async getBuyerInvoices(wallet: string): Promise<Invoice[]> {
+  async getBuyerInvoices(wallet: string, eligible = false): Promise<Invoice[]> {
     const customer = await this.customerRepository.findOne({ where: { walletAddress: wallet } });
     if (!customer) return [];
 
+    if (!eligible) {
+      return this.invoiceRepository.find({
+        where: { buyer: { id: customer.id } },
+        relations: ['seller', 'buyer'],
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    // If eligible flag is true, return only invoices that are eligible for ITC claim:
+    // - buyer is this customer
+    // - status = FINALIZED
+    // - buyerApprovalDate is set
+    // - transactionHash is set (seller finalized on-chain)
+    // - isClaimedForITC = false
+    // - seller.tenantId != buyer.companyTenantId (exclude self-issued invoices)
     return this.invoiceRepository.find({
-      where: { buyer: { id: customer.id } },
+      where: {
+        buyer: { id: customer.id },
+        status: InvoiceStatus.FINALIZED,
+        buyerApprovalDate: Not(IsNull()),
+        transactionHash: Not(IsNull()),
+        isClaimedForITC: false,
+        seller: { tenantId: Not(customer.companyTenantId) },
+      },
       relations: ['seller', 'buyer'],
-      order: { createdAt: 'DESC' },
+      order: { invoiceDate: 'DESC' },
+    });
+  }
+
+  async getBuyerEligibleInvoicesByWallet(wallet: string): Promise<Invoice[]> {
+  const customer = await this.customerRepository.findOne({
+    where: { walletAddress: wallet },
+  });
+
+  if (!customer) return [];
+
+  return this.invoiceRepository.find({
+    where: {
+      buyer: { id: customer.id },
+      status: InvoiceStatus.FINALIZED,
+      isClaimedForITC: false,
+      // buyerApprovalDate: Not(IsNull()),
+      // transactionHash: Not(IsNull()),
+      // seller: { tenantId: Not(customer.companyTenantId) }, // prevent self-claim
+    },
+    relations: ['seller', 'buyer'],
+    order: { invoiceDate: 'DESC' },
+  });
+}
+
+
+    async getEligibleITCInvoice(wallet: string, eligible = false): Promise<Invoice[]> {
+    const customer = await this.customerRepository.findOne({ where: { walletAddress: wallet } });
+    if (!customer) return [];
+
+    if (!eligible) {
+      return this.invoiceRepository.find({
+        where: { buyer: { id: customer.id } },
+        relations: ['seller', 'buyer'],
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    // If eligible flag is true, return only invoices that are eligible for ITC claim:
+    // - buyer is this customer
+    // - status = FINALIZED
+    // - buyerApprovalDate is set
+    // - transactionHash is set (seller finalized on-chain)
+    // - isClaimedForITC = false
+    // - seller.tenantId != buyer.companyTenantId (exclude self-issued invoices)
+    return this.invoiceRepository.find({
+      where: {
+        buyer: { id: customer.id },
+        status: InvoiceStatus.FINALIZED,
+        buyerApprovalDate: Not(IsNull()),
+        transactionHash: Not(IsNull()),
+        isClaimedForITC: false,
+        seller: { tenantId: Not(customer.companyTenantId) },
+      },
+      relations: ['seller', 'buyer'],
+      order: { invoiceDate: 'DESC' },
     });
   }
 
@@ -389,35 +494,31 @@ async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
     };
   }
 
-  // ============================================================
-  // GET ELIGIBLE ITC INVOICES
-  // ============================================================
-  async getEligibleItcInvoices(companyTenantId: string): Promise<Invoice[]> {
-    if (!companyTenantId) {
-      this.logger.warn('getEligibleItcInvoices called with undefined companyTenantId');
-      return [];
-    }
 
-    // Check if companyTenantId is a valid UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(companyTenantId)) {
-      this.logger.warn(`getEligibleItcInvoices called with invalid UUID: ${companyTenantId}`);
-      return [];
-    }
-
+  // ============================================================
+  // GET FINALIZED & NOT-ITC-CLAIMED INVOICES BY TENANT
+  // ============================================================
+  async findFinalizedUnclaimedByTenantId(tenantId: string): Promise<Invoice[]> {
     try {
-      return await this.invoiceRepository.find({
+      const invoices = await this.invoiceRepository.find({
         where: {
-          buyer: { companyTenantId },
+          seller: { tenantId },
           status: InvoiceStatus.FINALIZED,
           isClaimedForITC: false,
         },
         relations: ['seller', 'buyer'],
         order: { createdAt: 'DESC' },
       });
+
+      return invoices || [];
     } catch (error) {
-      this.logger.error('Error fetching eligible ITC invoices:', error.stack);
-      throw new InternalServerErrorException('Failed to fetch eligible invoices');
+      this.logger.error(
+        `Error fetching finalized & unclaimed invoices for tenantId ${tenantId}:`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to fetch finalized unclaimed invoices');
     }
   }
+
+
 }
