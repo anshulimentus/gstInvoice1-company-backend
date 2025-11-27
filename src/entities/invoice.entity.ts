@@ -35,13 +35,13 @@ export class Invoice {
   @JoinColumn({ name: 'buyer_id' })
   buyer: Customer;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('int')
   totalTaxableValue: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('int')
   totalGstAmount: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('int')
   grandTotal: number;
 
   @Column({ type: 'varchar', length: 255 })
