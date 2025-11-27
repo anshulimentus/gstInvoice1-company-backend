@@ -30,10 +30,10 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   imageUrl: string;
 
-  @Column('int')
+  @Column('numeric', { precision: 10, scale: 2 })
   basePrice: number;
 
-  @Column('int')
+  @Column('numeric', { precision: 10, scale: 2 })
   finalPrice: number;
 
   @Column({

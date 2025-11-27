@@ -27,7 +27,6 @@ export const AppDataSource = new DataSource({
   ],
   migrations: [
     __dirname + '/1764236784154-InitialSchema.ts',
-    __dirname + '/1764236784155-ChangeMonetaryColumnsToInt.ts',
   ],
   synchronize: false,
   logging: true,

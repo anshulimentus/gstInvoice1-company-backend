@@ -55,9 +55,9 @@ export class InvoiceService {
         invoiceDate: new Date(invoiceDate),
         supplyType,
         items,
-        totalTaxableValue: Math.floor(totalTaxableValue),
-        totalGstAmount: Math.floor(totalGstAmount),
-        grandTotal: Math.floor(grandTotal),
+        totalTaxableValue,
+        totalGstAmount,
+        grandTotal,
         paymentTerms,
         isFinal: isFinal || false,
         transactionHash: transactionHash || undefined,
@@ -507,7 +507,7 @@ async getBuyerFinalizedInvoices(walletAddress: string): Promise<Invoice[]> {
       }
 
       customer.totalInvoices += 1;
-      customer.totalAmountBilled += Math.floor(invoiceAmount);
+      customer.totalAmountBilled += invoiceAmount;
 
       await this.customerRepository.save(customer);
       this.logger.log(`✅ Updated customer ${customer.name} stats: invoices=${customer.totalInvoices}, total=${customer.totalAmountBilled}`);

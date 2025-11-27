@@ -32,13 +32,13 @@ export class CreateProductDto {
   @IsNotEmpty()
   imageUrl: string;
 
-  @IsNumber({ allowNaN: false, maxDecimalPlaces: 0 })
+  @IsNumber({ allowNaN: false, maxDecimalPlaces: 2 })
   @Type(() => Number)
   @Min(0)
   basePrice: number;
 
   @IsOptional()
-  @IsNumber({ allowNaN: false, maxDecimalPlaces: 0 })
+  @IsNumber({ allowNaN: false, maxDecimalPlaces: 2 })
   @Type(() => Number)
   finalPrice?: number; // auto-calculated, optional in payload
 
