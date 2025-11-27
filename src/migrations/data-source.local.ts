@@ -1,13 +1,13 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
-import { Company } from '../company/entities/company.entity';
-import { Customer } from '../customer/entities/customer.entity';
-import { ImageEntity } from '../image/image.entity';
-import { Invoice } from '../invoice/entities/invoice.entity';
-import { ItcClaim } from '../itc/entities/itc-claim.entity';
-import { Product } from '../product/entities/product.entity';
-import { State } from '../State/entities/state.entity';
-import { User } from '../users/users.entity';
+import { Company } from '../entities/company.entity';
+import { Customer } from '../entities/customer.entity';
+import { ImageEntity } from '../entities/image.entity';
+import { Invoice } from '../entities/invoice.entity';
+import { ItcClaim } from '../entities/itc-claim.entity';
+import { Product } from '../entities/product.entity';
+import { State } from '../entities/state.entity';
+import { User } from '../entities/users.entity';
 
 config();
 
@@ -25,7 +25,7 @@ export const AppDataSourceLocal = new DataSource({
     Invoice,
     ItcClaim,
   ],
-  migrations: [__dirname + '/*.ts'],
+  migrations: ['src/migrations/1762759238515-InitialEntities.ts', 'src/migrations/1762764081069-UpdateCompanyEntity.ts', 'src/migrations/1762759219847-UpdateCustomerStateCodeType.ts', 'src/migrations/1731929230000-AddStatusToItcClaim.ts', 'src/migrations/1763472577076-ChangeItcClaimCompanyIdToUuid.ts'],
   synchronize: false,
   logging: true,
   migrationsTableName: 'migrations',

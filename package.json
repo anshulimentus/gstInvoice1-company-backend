@@ -27,7 +27,9 @@
     "migration:revert:local": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/migrations/data-source.local.ts",
     "migration:generate:prod": "NODE_ENV=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/migrations/data-source.prod.ts",
     "migration:run:prod": "NODE_ENV=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/migrations/data-source.prod.ts",
-    "migration:revert:prod": "NODE_ENV=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/migrations/data-source.prod.ts"
+    "migration:revert:prod": "NODE_ENV=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/migrations/data-source.prod.ts",
+    "db:seed:states": "npx ts-node src/scripts/seed-states.ts",
+    "db:seed:states:prod": "NODE_ENV=production npx ts-node src/scripts/seed-states.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.12",
