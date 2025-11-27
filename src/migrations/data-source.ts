@@ -26,11 +26,7 @@ export const AppDataSource = new DataSource({
     ItcClaim,
   ],
   migrations: [
-    __dirname + '/1730612752000-InitialMigration.ts',
-    __dirname + '/1730612752001-UpdateCustomerTable.ts',
-    __dirname + '/1762254339210-AddBlockchainProductId.ts',
-    __dirname + '/1762263306127-AddBlockchainCustomerIdToCustomer.ts',
-    __dirname + '/1762263306128-AddMissingInvoiceColumns.ts',
+    __dirname + '/1764236784154-InitialSchema.ts',
   ],
   synchronize: false,
   logging: true,
