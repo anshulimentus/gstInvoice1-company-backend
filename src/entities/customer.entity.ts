@@ -48,7 +48,7 @@ export class Customer {
   @Column({ type: 'int', default: 0 })
   totalInvoices: number;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'int', default: 0 })
   totalAmountBilled: number;
 
   @CreateDateColumn({ type: 'timestamp' })

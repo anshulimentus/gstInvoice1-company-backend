@@ -69,15 +69,15 @@ export class CreateInvoiceDto {
   @Type(() => InvoiceItemDto)
   items: InvoiceItemDto[];
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 0 })
   @IsNotEmpty()
   totalTaxableValue: number;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 0 })
   @IsNotEmpty()
   totalGstAmount: number;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 0 })
   @IsNotEmpty()
   grandTotal: number;
 
