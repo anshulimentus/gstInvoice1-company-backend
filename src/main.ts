@@ -36,6 +36,7 @@ async function bootstrap() {
       ? [
           'https://gst-invoice-company-frontend.vercel.app',
           'https://gst-invoice-company-frontend-git-main-anshuls-projects-1ad701d0.vercel.app',
+          'https://gst-invoice-company-frontend-16smxnr2t.vercel.app',
         ]
       : [
           'https://gst-invoice-company-frontend.vercel.app',
