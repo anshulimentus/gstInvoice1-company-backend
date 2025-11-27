@@ -152,6 +152,32 @@ export class InvoiceService {
     return updated;
   }
 
+  async claimItcForInvoice(invoiceId: string, transactionHash: string): Promise<Invoice> {
+    const invoice = await this.invoiceRepository.findOne({ where: { invoiceId } });
+    if (!invoice) throw new NotFoundException(`Invoice ${invoiceId} not found`);
+
+    if (invoice.status !== InvoiceStatus.FINALIZED) {
+      throw new BadRequestException(
+        `Only finalized invoices can be claimed for ITC. Current: ${invoice.status}`,
+      );
+    }
+
+    if (invoice.isClaimedForITC) {
+      throw new BadRequestException('ITC already claimed for this invoice');
+    }
+
+    invoice.status = InvoiceStatus.ITC_CLAIMED;
+    invoice.isClaimedForITC = true;
+    // Optionally store the transaction hash if not already set
+    if (!invoice.transactionHash) {
+      invoice.transactionHash = transactionHash;
+    }
+
+    const updated = await this.invoiceRepository.save(invoice);
+    this.logger.log(`💰 Invoice ${invoice.invoiceNo} ITC claimed with tx: ${transactionHash}`);
+    return updated;
+  }
+
   async findInvoicesByTenantId(tenantId: string): Promise<Invoice[]> {
     try {
       // 1. Fetch invoices directly from the database
@@ -426,6 +452,28 @@ export class InvoiceService {
       order: { createdAt: 'DESC' },
     });
   }
+
+async getBuyerFinalizedInvoices(walletAddress: string): Promise<Invoice[]> {
+  this.logger.log(`📥 Filtering FINALIZED and ITC_CLAIMED invoices for buyer.walletAddress = ${walletAddress}`);
+
+  const invoices = await this.invoiceRepository.find({
+    where: [
+      {
+        status: InvoiceStatus.FINALIZED,
+        buyer: { walletAddress },
+      },
+      {
+        status: InvoiceStatus.ITC_CLAIMED,
+        buyer: { walletAddress },
+      }
+    ],
+    relations: ['buyer', 'seller'],
+  });
+
+  this.logger.log(`📦 Found ${invoices.length} invoices for wallet: ${walletAddress}`);
+  return invoices;
+}
+
 
   // ============================================================
   // PDF GENERATION

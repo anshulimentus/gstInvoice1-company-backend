@@ -23,6 +23,9 @@ export class User {
   @Column({ default: 'User' })
   role: string;
 
+  @Column()
+  walletAddress: string;
+
   @CreateDateColumn()
   created_at: Date;
 

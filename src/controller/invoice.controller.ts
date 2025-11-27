@@ -54,6 +54,12 @@ export class InvoiceController {
     return this.service.markInvoiceItcClaimed(id);
   }
 
+  @Patch(':id/claim-itc')
+  @ApiOperation({ summary: 'Update invoice status to ITC claimed after successful blockchain claim' })
+  async claimItc(@Param('id', ParseUUIDPipe) id: string, @Body() body: { transactionHash: string }) {
+    return this.service.claimItcForInvoice(id, body.transactionHash);
+  }
+
   @Patch(':id/finalize')
   @ApiOperation({ summary: 'Update invoice after blockchain finalization' })
   async finalizeOnChain(
@@ -156,37 +162,42 @@ export class InvoiceController {
     return this.service.getBuyerInvoices(wallet, eligible);
   }
 
-    @Get('buyer/wallet/:wallet')
-  @ApiOperation({ summary: 'Get invoices for buyer by wallet address (optional ?eligible=true for eligible ITC invoices)' })
-  async getEligibleITCInvoice(@Param('wallet') wallet: string, @Request() req: any) {
-    const eligible = req?.query?.eligible === 'true';
-    return this.service.getEligibleITCInvoice(wallet, eligible);
-  }
+//   @Get('buyer/eligible-itc')
+// @ApiOperation({ summary: 'Get finalized and unclaimed invoices for authenticated buyer' })
+// async getEligibleInvoicesForBuyer(@Request() req: any) {
+//   const tenantId = req.user?.tenant_id;
 
-  @Get('buyer/eligible-itc')
-@ApiOperation({ summary: 'Get finalized and unclaimed invoices for authenticated buyer' })
-async getEligibleInvoicesForBuyer(@Request() req: any) {
-  const tenantId = req.user?.tenant_id;
+//   if (!tenantId) {
+//     throw new BadRequestException('Invalid user tenant in JWT');
+//   }
 
-  if (!tenantId) {
-    throw new BadRequestException('Invalid user tenant in JWT');
-  }
+//   // Fetch all invoices where this company is the BUYER (received invoices)
+//   const buyerInvoices = await this.service.findBuyerInvoicesByTenantId(tenantId);
 
-  // Fetch all invoices where this company is the BUYER (received invoices)
-  const buyerInvoices = await this.service.findBuyerInvoicesByTenantId(tenantId);
+//   // Return only invoices that are finalized and not yet claimed for ITC
+//   const filtered = buyerInvoices.filter(
+//     (inv) => inv.status === InvoiceStatus.FINALIZED && inv.isClaimedForITC === false,
+//   );
 
-  // Return only invoices that are finalized and not yet claimed for ITC
-  const filtered = buyerInvoices.filter(
-    (inv) => inv.status === InvoiceStatus.FINALIZED && inv.isClaimedForITC === false,
-  );
+//   return {
+//     success: true,
+//     data: filtered,
+//     count: filtered.length,
+//   };
+// }
 
-  return {
-    success: true,
-    data: filtered,
-    count: filtered.length,
-  };
+@UseGuards(JwtAuthGuard)
+@Get('buyer/finalized')
+async getFinalizedInvoicesForBuyer(@Request() req: any) {
+  const walletAddress = req.user?.walletAddress;
+  console.log("✅ JWT Payload:", req.user);
+  console.log("🔎 Filtering for buyer.walletAddress:", walletAddress);
+
+  const invoices = await this.service.getBuyerFinalizedInvoices(walletAddress);
+  console.log("📦 Retrieved Invoices:", invoices);
+
+  return invoices;
 }
-
 
 
   @Get('buyer/wallet/:wallet/statistics')
